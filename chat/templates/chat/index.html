@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatter the Chatty Chatbot</title>
+    <title>Agnes – USU Extension Assistant</title>
     {% load static %}
     <style>
         * {
@@ -284,12 +284,47 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .feedback-controls {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .feedback-label {
+            font-weight: 500;
+        }
+
+        .feedback-button {
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            color: #374151;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .feedback-button:hover {
+            background-color: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .feedback-button:disabled {
+            cursor: default;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>USU Extension Assistant</h1>
+            <h1>Agnes – USU Extension Assistant</h1>
             <div class="county-badge" id="countyBadge" style="display: none;">
                 County: <span id="countyName"></span>
             </div>
@@ -310,7 +345,7 @@
                 type="text" 
                 class="chat-input" 
                 id="messageInput" 
-                placeholder="Type your message here..."
+                placeholder="Ask Agnes a question about your farm, garden, or local Extension resources..."
                 autocomplete="off"
             >
             <button class="send-button" id="sendButton">Send</button>

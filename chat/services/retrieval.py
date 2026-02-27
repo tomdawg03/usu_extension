@@ -45,6 +45,28 @@ def calculate_relevance_score(question_keywords, title, subject, content):
     return score
 
 
+def to_public_url(link: str) -> str:
+    """
+    Normalize stored fact sheet links to public HTTPS URLs.
+    - If link already looks like an HTTP(S) URL, return it unchanged.
+    - If link looks like a local file path, convert it to:
+      https://extension.usu.edu/files-ou/<filename>
+    - Otherwise, return the original link.
+    """
+    if not link or not isinstance(link, str):
+        return ""
+    stripped = link.strip()
+    if stripped.startswith("http://") or stripped.startswith("https://"):
+        return stripped
+    filename = Path(stripped).name
+    if not filename:
+        return stripped
+    # Only rewrite obvious PDF filenames; otherwise leave as-is
+    if filename.lower().endswith(".pdf"):
+        return f"https://extension.usu.edu/files-ou/{filename}"
+    return stripped
+
+
 def retrieve_relevant_papers(question, db_path, top_k=TOP_K, min_score=MIN_RELEVANCE_SCORE):
     """
     Return list of dicts with keys: title, subject, content, link.
@@ -87,7 +109,7 @@ def retrieve_relevant_papers(question, db_path, top_k=TOP_K, min_score=MIN_RELEV
             "title": row.get("title") or "Untitled",
             "subject": row.get("subject") or "",
             "content": content[:CONTENT_EXCERPT_LEN],
-            "link": row.get("link") or "",
+            "link": to_public_url(row.get("link") or ""),
         })
     return result
 
