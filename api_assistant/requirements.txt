@@ -1,8 +1,0 @@
-Django>=4.2,<5.0
-gunicorn>=21.0.0
-whitenoise>=6.0.0
-fastapi
-uvicorn
-openai>=1.0.0
-pydantic
-python-dotenv>=1.0.0

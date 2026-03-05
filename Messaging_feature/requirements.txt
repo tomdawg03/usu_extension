@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 fastapi 
 uvicorn 
+=======
+>>>>>>> 8a0c248ac08894b32a3dba5040cb7bfe7d813a86
 pandas
 nest-asyncio 
 python-dotenv
