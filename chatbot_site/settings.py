@@ -25,6 +25,8 @@ SECRET_KEY = 'django-insecure-dev-key-change-in-production'
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    'extensionassistant.org',
+    'www.extensionassistant.org',
     'usu-extension-test-905684985699.europe-west1.run.app',
     'test-usu-extension-905684985699.us-west1.run.app',
     '127.0.0.1',
