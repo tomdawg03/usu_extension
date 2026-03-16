@@ -35,8 +35,8 @@ ALLOWED_HOSTS = [
 
 # Required for CSRF when serving on HTTPS (e.g. Cloud Run)
 CSRF_TRUSTED_ORIGINS = [
-    'extensionassistant.org',
-    'www.extensionassistant.org',
+    'https://extensionassistant.org',
+    'https://www.extensionassistant.org',
     'https://usu-extension-test-905684985699.europe-west1.run.app',
     'https://test-usu-extension-905684985699.us-west1.run.app',
     'https://usu-extension-381213932906.us-west1.run.app',
