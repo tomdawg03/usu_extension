@@ -110,7 +110,7 @@ function addMessage(text, isUser) {
                 </p>
                 <input type="text" placeholder="Your name" class="esc-name">
                 <input type="email" placeholder="Your email" class="esc-email">
-                <textarea class="esc-msg">${lastUserMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                <textarea class="esc-msg" placeholder="Your full chat history will be sent automatically. Add any extra context here if you'd like..."></textarea>
                 <button class="submit-btn">Send to Extension office</button>
                 <div class="escalation-sent">&#10003; Sent! Someone will be in touch soon.</div>
             </div>
@@ -152,7 +152,27 @@ function addMessage(text, isUser) {
             const name  = feedbackDiv.querySelector('.esc-name').value.trim();
             const email = feedbackDiv.querySelector('.esc-email').value.trim();
             const msg   = feedbackDiv.querySelector('.esc-msg').value.trim();
-            if (!name || !email) { alert('Please enter your name and email.'); return; }
+            if (!name || !email || !msg) {
+                const form = feedbackDiv.querySelector('.escalation-form');
+                let existing = form.querySelector('.validation-error');
+                if (!existing) {
+                    existing = document.createElement('p');
+                    existing.className = 'validation-error';
+                    existing.style.cssText = 'color:#dc2626;font-size:13px;margin:0;';
+                    form.insertBefore(existing, form.querySelector('.submit-btn'));
+                }
+                existing.textContent = 'Please fill in your name, email, and message before sending.';
+                if (!name) feedbackDiv.querySelector('.esc-name').style.borderColor = '#dc2626';
+                if (!email) feedbackDiv.querySelector('.esc-email').style.borderColor = '#dc2626';
+                if (!msg) feedbackDiv.querySelector('.esc-msg').style.borderColor = '#dc2626';
+                return;
+            }
+            // Clear any previous errors
+            const existingErr = feedbackDiv.querySelector('.validation-error');
+            if (existingErr) existingErr.remove();
+            feedbackDiv.querySelector('.esc-name').style.borderColor = '';
+            feedbackDiv.querySelector('.esc-email').style.borderColor = '';
+            feedbackDiv.querySelector('.esc-msg').style.borderColor = '';
             this.disabled = true;
             try {
                 await fetch('/api/escalate', {

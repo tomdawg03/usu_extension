@@ -59,23 +59,10 @@
             background: linear-gradient(to bottom, #fafbfc 0%, #ffffff 100%);
         }
 
-        .chat-messages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #0F2439;
-            border-radius: 4px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: #1a3d5a;
-        }
+        .chat-messages::-webkit-scrollbar { width: 8px; }
+        .chat-messages::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #0F2439; border-radius: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb:hover { background: #1a3d5a; }
 
         .message {
             padding: 14px 18px;
@@ -89,14 +76,8 @@
         }
 
         @keyframes messageSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.user {
@@ -114,31 +95,11 @@
             border-bottom-left-radius: 4px;
         }
 
-        .message.bot a {
-            color: #0F2439;
-            text-decoration: underline;
-            font-weight: 500;
-        }
-
-        .message.bot a:hover {
-            color: #1a3d5a;
-        }
-
-        .chat-message p {
-            margin-bottom: 12px;
-            line-height: 1.6;
-        }
-
-        .chat-message ul {
-            margin-left: 20px;
-            margin-bottom: 12px;
-        }
-
-        .chat-message a {
-            color: #0F2439;
-            font-weight: 500;
-            text-decoration: underline;
-        }
+        .message.bot a { color: #0F2439; text-decoration: underline; font-weight: 500; }
+        .message.bot a:hover { color: #1a3d5a; }
+        .chat-message p { margin-bottom: 12px; line-height: 1.6; }
+        .chat-message ul { margin-left: 20px; margin-bottom: 12px; }
+        .chat-message a { color: #0F2439; font-weight: 500; text-decoration: underline; }
 
         .chat-input-container {
             display: flex;
@@ -146,6 +107,31 @@
             border-top: 1px solid #e8ecef;
             gap: 12px;
             background-color: #ffffff;
+            flex-wrap: wrap;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .chat-category-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .chat-category-row label { font-size: 13px; color: #6b7280; }
+        .chat-category-row select {
+            padding: 8px 12px;
+            border: 1px solid #e8ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fafbfc;
         }
 
         .chat-input {
@@ -186,19 +172,11 @@
             background: linear-gradient(135deg, #1a3d5a 0%, #0F2439 100%);
         }
 
-        .send-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 6px rgba(15, 36, 57, 0.2);
-        }
+        .send-button:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(15, 36, 57, 0.2); }
+        .send-button:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        .send-button:disabled {
-            background: #cbd5e0;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .county-badge {
+        .county-badge { display: inline-block; margin-top: 8px; }
+        .county-badge a {
             display: inline-block;
             background: rgba(255, 255, 255, 0.2);
             color: white;
@@ -206,11 +184,12 @@
             border-radius: 20px;
             font-size: 13px;
             font-weight: 500;
-            margin-top: 8px;
             border: 1px solid rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+            cursor: pointer;
         }
+        .county-badge a:hover { background: rgba(255, 255, 255, 0.3); }
 
-        /* Empty state: suggested prompts */
         .chat-suggestions {
             flex: 1;
             display: flex;
@@ -222,19 +201,9 @@
             min-height: 200px;
         }
 
-        .chat-suggestions h2 {
-            font-size: 15px;
-            font-weight: 600;
-            color: #6b7280;
-            margin: 0;
-        }
+        .chat-suggestions h2 { font-size: 15px; font-weight: 600; color: #6b7280; margin: 0; }
 
-        .suggestion-pills {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-        }
+        .suggestion-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 
         .suggestion-pill {
             padding: 10px 18px;
@@ -255,7 +224,6 @@
             color: #0F2439;
         }
 
-        /* Loading state: bot bubble with spinner */
         .message.loading {
             align-self: flex-start;
             display: flex;
@@ -275,15 +243,9 @@
             flex-shrink: 0;
         }
 
-        .message.loading .loading-text {
-            color: #6b7280;
-            font-size: 14px;
-            font-weight: 500;
-        }
+        .message.loading .loading-text { color: #6b7280; font-size: 14px; font-weight: 500; }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .feedback-controls {
             margin-top: 10px;
@@ -295,9 +257,7 @@
             flex-wrap: wrap;
         }
 
-        .feedback-label {
-            font-weight: 500;
-        }
+        .feedback-label { font-weight: 500; }
 
         .feedback-button {
             padding: 4px 10px;
@@ -310,14 +270,61 @@
             transition: background-color 0.15s ease, border-color 0.15s ease;
         }
 
-        .feedback-button:hover {
-            background-color: #edf2f7;
-            border-color: #cbd5e0;
+        .feedback-button:hover { background-color: #edf2f7; border-color: #cbd5e0; }
+        .feedback-button:disabled { cursor: default; opacity: 0.6; }
+
+        .escalation-form {
+            margin-top: 12px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e8ecef;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
         }
 
-        .feedback-button:disabled {
-            cursor: default;
-            opacity: 0.6;
+        .escalation-form.visible { display: flex; }
+
+        .escalation-form input {
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .escalation-form textarea {
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .escalation-form .submit-btn {
+            padding: 10px 20px;
+            background: #0F2439;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            align-self: flex-start;
+        }
+
+        .escalation-form .submit-btn:hover { opacity: 0.9; }
+
+        .escalation-sent {
+            margin-top: 4px;
+            font-size: 13px;
+            color: #16a34a;
+            font-weight: 500;
+            display: none;
         }
     </style>
 </head>
@@ -326,7 +333,7 @@
         <div class="chat-header">
             <h1>Agnes – USU Extension Assistant</h1>
             <div class="county-badge" id="countyBadge" style="display: none;">
-                County: <span id="countyName"></span>
+                <a href="{% url 'county_select' %}">County: <span id="countyName"></span></a>
             </div>
         </div>
         <div class="chat-messages" id="chatMessages">
@@ -341,18 +348,35 @@
             </div>
         </div>
         <div class="chat-input-container">
-            <input 
-                type="text" 
-                class="chat-input" 
-                id="messageInput" 
-                placeholder="Ask Agnes a question about your farm, garden, or local Extension resources..."
-                autocomplete="off"
-            >
-            <button class="send-button" id="sendButton">Send</button>
+            <div class="chat-category-row">
+                <label for="mainCategory">Category:</label>
+                <select id="mainCategory">
+                    {% for cat in main_categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+                <label for="subcategory">Subcategory:</label>
+                <select id="subcategory">
+                    {% for sub in subcategory_map.Other %}
+                    <option value="{{ sub }}">{{ sub }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="chat-input-row">
+                <input
+                    type="text"
+                    class="chat-input"
+                    id="messageInput"
+                    placeholder="Ask Agnes a question about your farm, garden, or local Extension resources..."
+                    autocomplete="off"
+                >
+                <button class="send-button" id="sendButton">Send</button>
+            </div>
         </div>
     </div>
 
+    {{ subcategory_map|json_script:"subcategory-map-json" }}
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="{% static 'chat/chat.js' %}?v=2"></script>
+    <script src="{% static 'chat/chat.js' %}?v=6"></script>
 </body>
 </html>
