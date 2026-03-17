@@ -59,7 +59,7 @@ function initMap() {
                         },
                         click: function () {
                             localStorage.setItem("selected_county", name);
-                            window.location.href = "/chat/";
+                            window.location.href = "/hub/?county=" + encodeURIComponent(name);
                         }
                     });
 

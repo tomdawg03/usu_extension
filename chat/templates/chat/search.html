@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search articles - USU Extension</title>
+    {% load static %}
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        .header { margin-bottom: 20px; }
+        .header h1 { font-size: 22px; color: #0F2439; margin-bottom: 4px; }
+        .header p { font-size: 14px; color: #6b7280; }
+        .search-row { display: flex; gap: 8px; margin-bottom: 20px; }
+        .search-row input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .search-row button {
+            padding: 12px 20px;
+            background: #0F2439;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .search-row button:hover { opacity: 0.9; }
+        .results { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(15,36,57,0.08); overflow: hidden; }
+        .results ul { list-style: none; }
+        .results li { border-bottom: 1px solid #eee; }
+        .results li:last-child { border-bottom: none; }
+        .results a { display: block; padding: 14px 18px; color: #0F2439; text-decoration: none; }
+        .results a:hover { background: #f5f7fa; }
+        .results .title { font-weight: 500; }
+        .results .url { font-size: 12px; color: #6b7280; margin-top: 4px; }
+        .back { margin-bottom: 16px; }
+        .back a { color: #0F2439; text-decoration: none; font-size: 14px; }
+        .back a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back"><a href="{% url 'hub' %}?county={{ county|urlencode }}">← Back</a></div>
+        <div class="header">
+            <h1>Search for an article</h1>
+            <p>Search by keyword (e.g. gardening, impact report)</p>
+        </div>
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="Enter keyword..." autocomplete="off">
+            <button type="button" id="searchBtn">Search</button>
+        </div>
+        <div class="results" id="resultsContainer">
+            <ul id="resultsList"></ul>
+        </div>
+    </div>
+    <script>
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var county = params.get('county');
+            if (county) localStorage.setItem('selected_county', county);
+        })();
+        (function() {
+            var input = document.getElementById('searchInput');
+            var btn = document.getElementById('searchBtn');
+            var list = document.getElementById('resultsList');
+            function runSearch() {
+                var q = (input.value || '').trim();
+                list.innerHTML = '';
+                if (!q) return;
+                fetch('/api/search?q=' + encodeURIComponent(q))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        var results = data.results || [];
+                        if (results.length === 0) {
+                            list.innerHTML = '<li style="padding:20px;color:#6b7280;">No articles found.</li>';
+                            return;
+                        }
+                        results.forEach(function(item) {
+                            var li = document.createElement('li');
+                            var a = document.createElement('a');
+                            a.href = item.url;
+                            a.target = '_blank';
+                            a.rel = 'noopener';
+                            var title = document.createElement('span');
+                            title.className = 'title';
+                            title.textContent = item.title || item.url;
+                            var urlSpan = document.createElement('span');
+                            urlSpan.className = 'url';
+                            urlSpan.textContent = item.url;
+                            a.appendChild(title);
+                            a.appendChild(urlSpan);
+                            li.appendChild(a);
+                            list.appendChild(li);
+                        });
+                    })
+                    .catch(function() {
+                        list.innerHTML = '<li style="padding:20px;color:#6b7280;">Search failed.</li>';
+                    });
+            }
+            btn.addEventListener('click', runSearch);
+            input.addEventListener('keypress', function(e) { if (e.key === 'Enter') runSearch(); });
+        })();
+    </script>
+</body>
+</html>

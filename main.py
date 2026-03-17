@@ -4,15 +4,21 @@ from openai import OpenAI
 import time
 import os
 from dotenv import load_dotenv
+from functools import lru_cache
 
 # Load environment variables
 load_dotenv()
 
 app = FastAPI(title="AG Extension Q&A API")
 
-# Initialize OpenAI client with API key from environment
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 ASSISTANT_ID = os.getenv("ASSISTANT_ID", "asst_IlflAyLDYVWCfSSJpMZ7ZgEO")
+
+@lru_cache(maxsize=1)
+def get_openai_client() -> OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not set")
+    return OpenAI(api_key=api_key)
 
 class Question(BaseModel):
     message: str
@@ -29,7 +35,8 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "assistant_id": ASSISTANT_ID}
+    configured = bool(os.getenv("OPENAI_API_KEY"))
+    return {"status": "healthy", "assistant_id": ASSISTANT_ID, "openai_configured": configured}
 
 @app.post("/ask")
 def ask_question(question: Question):
@@ -38,6 +45,8 @@ def ask_question(question: Question):
     Only returns answers from the fact sheets database.
     """
     try:
+        client = get_openai_client()
+        
         # Create thread
         thread = client.beta.threads.create()
 

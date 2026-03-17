@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USU Extension</title>
+    {% load static %}
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(15, 36, 57, 0.15);
+            padding: 48px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .header { text-align: center; margin-bottom: 28px; }
+        .header h1 { font-size: 24px; font-weight: 600; color: #0F2439; margin-bottom: 8px; }
+        .header p { font-size: 14px; color: #6b7280; }
+        .links { display: flex; flex-direction: column; gap: 12px; }
+        .links a {
+            display: block;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #0F2439 0%, #1a3d5a 100%);
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .header-purpose {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        .header-cta {
+            margin-top: 20px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9ca3af;
+            text-align: center;
+        }
+        .links a:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{% if county %}{{ county }} County{% else %}USU Extension{% endif %}</h1>
+            <p class="header-purpose">
+                Find trusted, research-based USU Extension information for your county by searching for articles or asking your own questions.
+            </p>
+            <p class="header-cta">What would you like to do?</p>
+        </div>
+        <div class="links">
+            <a href="{% url 'search' %}?county={{ county|urlencode }}">Search for an article</a>
+            <a href="{% url 'chat' %}?county={{ county|urlencode }}">Ask a question</a>
+        </div>
+    </div>
+</body>
+</html>
