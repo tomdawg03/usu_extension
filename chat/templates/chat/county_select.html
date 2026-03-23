@@ -13,62 +13,93 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            width: 100%;
+            min-height: 100%;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf0 100%);
+            background: #f0f0f5;
+            color: #1f2937;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Full-width column, aligned with chat page */
+        .county-page {
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0 12px 40px rgba(15, 36, 57, 0.15);
-            padding: 48px;
-            max-width: 900px;
+            min-height: 100dvh;
             width: 100%;
-            border: 1px solid rgba(15, 36, 57, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px 28px;
         }
 
-        .header {
+        .map-page-header {
+            width: 100%;
+            max-width: 680px;
             text-align: center;
-            margin-bottom: 24px;
+            padding: 8px 12px 20px;
         }
 
-        .header h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: #0F2439;
-            margin-bottom: 12px;
-            letter-spacing: -0.5px;
+        .map-page-header h1 {
+            font-size: clamp(17px, 2.5vw, 20px);
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            color: #374151;
+            margin-bottom: 8px;
         }
 
-        .header p {
-            font-size: 16px;
+        .map-page-sub {
+            font-size: 14px;
+            line-height: 1.45;
             color: #6b7280;
             font-weight: 400;
         }
 
-        #map {
-            height: 750px;
-            max-height: 80vh;
+        .map-wrap {
             width: 100%;
+            max-width: min(920px, 100%);
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding: 0 4px;
+        }
+
+        #map {
+            width: 100%;
+            height: min(72vh, 780px);
+            min-height: 420px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(15, 36, 57, 0.1);
-            background: #ffffff;
+            border: 1px solid #e4e4ea;
+            background: #fafafa;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         }
 
         @media (max-width: 640px) {
-            #map { height: 400px; }
+            .county-page {
+                padding: 16px 12px 24px;
+            }
+
+            .map-page-header {
+                padding-bottom: 16px;
+            }
+
+            #map {
+                height: min(58vh, 520px);
+                min-height: 320px;
+                border-radius: 10px;
+            }
         }
 
         .county-label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
-            color: #111827;
+            color: #374151;
             pointer-events: none;
             background: none !important;
             border: none !important;
@@ -77,15 +108,17 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <div class="county-page">
+        <header class="map-page-header">
             <h1>Select Your County</h1>
-            <p>Click a county on the map to get personalized assistance</p>
+            <p class="map-page-sub">Click a county on the map to get personalized assistance</p>
+        </header>
+        <div class="map-wrap">
+            <div id="map"></div>
         </div>
-        <div id="map"></div>
     </div>
     <script>window.GEOJSON_URL = "{% static 'chat/utah_counties.geojson' %}";</script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="{% static 'chat/county_select.js' %}?v=4"></script>
+    <script src="{% static 'chat/county_select.js' %}?v=6"></script>
 </body>
 </html>

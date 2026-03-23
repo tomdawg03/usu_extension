@@ -17,10 +17,10 @@ function initMap() {
     }).setView([39.3, -111.7], 7);
 
     const pastelColors = [
-        "#E8F0FA",  // light blue
-        "#F6EAF7",  // light lavender
-        "#FDF6E3",  // light cream
-        "#EAF5EA"   // light green
+        "#E8EDF5",
+        "#F0EAF5",
+        "#F5F2EA",
+        "#E8F2EA"
     ];
 
     function style(feature) {
@@ -30,9 +30,9 @@ function initMap() {
 
         return {
             fillColor: pastelColors[index],
-            fillOpacity: 1,
-            color: "#9CA3AF",
-            weight: 1.5
+            fillOpacity: 0.92,
+            color: "#c8c8d0",
+            weight: 1.25
         };
     }
 
@@ -49,9 +49,10 @@ function initMap() {
                     layer.on({
                         mouseover: function (e) {
                             e.target.setStyle({
-                                fillColor: "#0F2439",
-                                color: "#0F2439",
-                                weight: 2
+                                fillColor: "#d8dce6",
+                                color: "#9ca3af",
+                                weight: 2,
+                                fillOpacity: 0.95
                             });
                         },
                         mouseout: function (e) {
@@ -59,7 +60,7 @@ function initMap() {
                         },
                         click: function () {
                             localStorage.setItem("selected_county", name);
-                            window.location.href = "/hub/?county=" + encodeURIComponent(name);
+                            window.location.href = "/chat/?county=" + encodeURIComponent(name);
                         }
                     });
 

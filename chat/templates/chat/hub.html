@@ -62,12 +62,11 @@
         <div class="header">
             <h1>{% if county %}{{ county }} County{% else %}USU Extension{% endif %}</h1>
             <p class="header-purpose">
-                Find trusted, research-based USU Extension information for your county by searching for articles or asking your own questions.
+                Find trusted, research-based USU Extension information for your county by asking your own questions.
             </p>
             <p class="header-cta">What would you like to do?</p>
         </div>
         <div class="links">
-            <a href="{% url 'search' %}?county={{ county|urlencode }}">Search for an article</a>
             <a href="{% url 'chat' %}?county={{ county|urlencode }}">Ask a question</a>
         </div>
     </div>

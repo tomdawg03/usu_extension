@@ -45,11 +45,27 @@ if (mainCategorySelect) {
 // Minimum time (ms) to show the loading bubble so it's always visible
 var MIN_LOADING_MS = 500;
 
-// Load and display selected county (from localStorage or URL)
+// Load and display selected county (from localStorage or URL).
+// If county changed vs last chat load, drop conversation so landing (intro + suggestions) shows.
 (function() {
     var params = new URLSearchParams(window.location.search);
-    var countyFromUrl = params.get('county');
+    var countyFromUrl = (params.get('county') || '').trim();
     if (countyFromUrl) localStorage.setItem('selected_county', countyFromUrl);
+
+    var prevCtx = '';
+    try {
+        prevCtx = sessionStorage.getItem('chat_county_context') || '';
+    } catch (e) {}
+    if (countyFromUrl && prevCtx && countyFromUrl !== prevCtx) {
+        try {
+            sessionStorage.removeItem('conversation_id');
+        } catch (e) {}
+    }
+    if (countyFromUrl) {
+        try {
+            sessionStorage.setItem('chat_county_context', countyFromUrl);
+        } catch (e) {}
+    }
 })();
 var selectedCounty = localStorage.getItem('selected_county');
 if (selectedCounty) {
@@ -79,9 +95,12 @@ function hideSuggestions() {
     }
 }
 
-function addMessage(text, isUser) {
+function addMessage(text, isUser, insertBeforeNode, skipFeedback) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user' : 'bot chat-message'}`;
+    if (!isUser && skipFeedback) {
+        messageDiv.classList.add('welcome-hero');
+    }
 
     if (isUser) {
         messageDiv.textContent = text;
@@ -93,6 +112,7 @@ function addMessage(text, isUser) {
             a.setAttribute('rel', 'noopener');
         });
 
+        if (!skipFeedback) {
         // Unique ID for this message's escalation form
         const messageId = 'esc-' + Date.now();
 
@@ -195,9 +215,14 @@ function addMessage(text, isUser) {
         });
 
         messageDiv.appendChild(feedbackDiv);
+        }
     }
 
-    chatMessages.appendChild(messageDiv);
+    if (insertBeforeNode && insertBeforeNode.parentNode === chatMessages) {
+        chatMessages.insertBefore(messageDiv, insertBeforeNode);
+    } else {
+        chatMessages.appendChild(messageDiv);
+    }
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -206,7 +231,7 @@ function addLoadingBubble() {
     loadingDiv.className = 'message bot loading';
     loadingDiv.id = 'loading-bubble';
     loadingDiv.setAttribute('aria-live', 'polite');
-    loadingDiv.innerHTML = '<div class="spinner" aria-hidden="true"></div><span class="loading-text">Generating best response…</span>';
+    loadingDiv.innerHTML = '<div class="spinner" aria-hidden="true"></div><span class="loading-text">Searching our database...</span>';
     chatMessages.appendChild(loadingDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return loadingDiv;
@@ -227,6 +252,8 @@ async function sendMessage() {
 
     addMessage(message, true);
     messageInput.value = '';
+    var chatRoot = document.querySelector('.chat-container');
+    if (chatRoot) chatRoot.classList.add('chat-active');
     sendButton.disabled = true;
     if (messageInput) messageInput.disabled = true;
 
@@ -329,10 +356,13 @@ try {
     const storedConversationId = sessionStorage.getItem('conversation_id');
     if (storedConversationId) {
         conversationId = storedConversationId;
+        var chatRootRestore = document.querySelector('.chat-container');
+        if (chatRootRestore) chatRootRestore.classList.add('chat-active');
+        hideSuggestions();
     }
 } catch(e) {}
 
-// Initial greeting from Agnes
+// Initial greeting from Agnes (insert before suggested questions for landing layout)
 if (chatMessages) {
-    addMessage("Hi! I'm Agnes, your Extension office assistant. Go ahead and ask me a question about your farm, garden, or local Extension resources.", false);
+    addMessage("Hi! I'm Agnes, your Extension office assistant.\n\nGo ahead and ask me a question about your farm, garden, or local Extension resources.", false, suggestionsSection || null, true);
 }
