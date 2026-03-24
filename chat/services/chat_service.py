@@ -253,6 +253,24 @@ def get_reply(
         reply = _clean_reply(reply)
         sources = _build_sources_section(reply)
         reply = (reply + sources).strip()
+
+        # Retrieval verification — check if fact sheets actually match the query
+        db_path = getattr(settings, 'FACT_SHEETS_DB_PATH', None)
+        if db_path:
+            papers = retrieve_relevant_papers(message_clean, db_path)
+            check  = verify_retrieval_relevance(message_clean, papers, answer=reply)
+            logger.info(
+                "Retrieval check — confident=%s, score=%s, overlap=%.2f",
+                check["confident"], check["best_score"], check["overlap_ratio"],
+            )
+            if check["fallback_to_search"]:
+                reply += (
+                    "\n\n> ℹ️ **Tip:** The answer above is based on general knowledge. "
+                    "For more specific USU Extension resources, try our "
+                    "[article search](/search/?county=" + (county or "") + ") "
+                    "to browse fact sheets directly."
+                )
+
         logger.info("Reply from OpenAI assistant")
         return {"reply": reply or FALLBACK_REPLY}
 
