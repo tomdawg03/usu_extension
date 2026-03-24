@@ -215,17 +215,20 @@ User Information:
 """
 
     to_email = getattr(settings, 'ESCALATION_EMAIL', 'lauren.knox@usu.edu')
-    # When ready to send to county contacts instead, replace the line above with:
-    # to_email = contacts[0]['email'] if contacts else 'lauren.knox@usu.edu'
-
+    cc_email  = getattr(settings, 'ESCALATION_CC_EMAIL', 'christopher.t.corcoran@usu.edu')
+    
+    recipient_list = [to_email]
+    if cc_email and cc_email != to_email:
+        recipient_list.append(cc_email)
+    
     try:
         send_mail(
             subject=subject,
             message=body,
             from_email=getattr(settings, 'EMAIL_HOST_USER', ''),
-            recipient_list=[to_email],
+            recipient_list=recipient_list,
             fail_silently=False,
-        )
+    )
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         logger.error("Escalation email failed: %s", e)
