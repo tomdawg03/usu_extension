@@ -17,6 +17,10 @@ from .models import Conversation, Message, Feedback
 
 logger = logging.getLogger(__name__)
 
+@ensure_csrf_cookie
+def landing_view(request):
+    """Public-facing landing page explaining the tool."""
+    return render(request, 'chat/landing.html')
 
 @ensure_csrf_cookie
 def county_select(request):
