@@ -140,3 +140,55 @@ def get_county_contacts(county, csv_path):
     except Exception:
         pass
     return out
+
+def verify_retrieval_relevance(query: str, papers: list, answer: str = "") -> dict:
+    """
+    Second-layer check: measures keyword overlap between the user query
+    (and optionally the LLM answer) and the top retrieved fact sheet.
+
+    Returns:
+        {
+            "confident": bool,
+            "best_score": int,
+            "overlap_ratio": float,
+            "fallback_to_search": bool  # True = suggest search instead
+        }
+    """
+    if not papers:
+        return {"confident": False, "best_score": 0, "overlap_ratio": 0.0, "fallback_to_search": True}
+
+    query_keywords = set(extract_keywords(query))
+    if answer:
+        query_keywords |= set(extract_keywords(answer))
+
+    if not query_keywords:
+        return {"confident": True, "best_score": 0, "overlap_ratio": 0.0, "fallback_to_search": False}
+
+    top = papers[0]
+    combined = " ".join([
+        top.get("title", ""),
+        top.get("subject", ""),
+        top.get("content", ""),
+    ]).lower()
+
+    matched = {kw for kw in query_keywords if kw in combined}
+    overlap_ratio = len(matched) / len(query_keywords)
+
+    best_score = calculate_relevance_score(
+        list(query_keywords),
+        top.get("title"),
+        top.get("subject"),
+        top.get("content", "")[:CONTENT_SCORE_LEN],
+    )
+
+    # Thresholds — tune these as needed
+    MIN_CONFIDENCE_SCORE = 5
+    MIN_OVERLAP_RATIO    = 0.20
+
+    confident = (best_score >= MIN_CONFIDENCE_SCORE) and (overlap_ratio >= MIN_OVERLAP_RATIO)
+    return {
+        "confident": confident,
+        "best_score": best_score,
+        "overlap_ratio": round(overlap_ratio, 3),
+        "fallback_to_search": not confident,
+    }
