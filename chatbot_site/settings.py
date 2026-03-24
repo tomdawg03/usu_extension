@@ -132,3 +132,4 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 ESCALATION_EMAIL = os.environ.get('ESCALATION_EMAIL', 'lauren.knox@usu.edu')
+ESCALATION_CC_EMAIL = os.environ.get('ESCALATION_CC_EMAIL', 'christopher.t.corcoran@usu.edu')
