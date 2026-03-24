@@ -8,6 +8,7 @@ import logging
 import re
 import time
 from pathlib import Path
+from chat.services.retrieval import retrieve_relevant_papers, verify_retrieval_relevance
 
 from django.conf import settings
 
