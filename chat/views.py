@@ -232,7 +232,7 @@ User Information:
             from_email=getattr(settings, 'EMAIL_HOST_USER', ''),
             recipient_list=recipient_list,
             fail_silently=False,
-    )
+        )
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         logger.error("Escalation email failed: %s", e)
