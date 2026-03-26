@@ -265,7 +265,7 @@ def get_reply(
             )
             if check["fallback_to_search"]:
                 reply += (
-                    "\n\n> ℹ️ **Tip:** The answer above is based on general knowledge. "
+                    "\n\n> **Tip:** The answer above is based on general knowledge. "
                     "For more specific USU Extension resources, try our "
                     "[article search](/search/?county=" + (county or "") + ") "
                     "to browse fact sheets directly."

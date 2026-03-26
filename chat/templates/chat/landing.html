@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USU Extension AI Assistant</title>
+    <title>AGNES — USU Extension AI Assistant</title>
     {% load static %}
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,103 +24,77 @@
             line-height: 1.6;
         }
 
-        /* ── Hero ─────────────────────────────────────────────────────── */
+        /* ── Hero ── */
         .hero {
             background: linear-gradient(135deg, var(--usu-navy) 0%, var(--usu-blue) 100%);
             color: #fff;
-            padding: 72px 24px 80px;
+            padding: 64px 24px 72px;
             text-align: center;
         }
-        .hero-badge {
-            display: inline-block;
-            background: rgba(200, 169, 81, 0.20);
-            border: 1px solid rgba(200, 169, 81, 0.50);
-            color: var(--usu-gold);
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            padding: 4px 14px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-        }
         .hero h1 {
-            font-size: clamp(28px, 5vw, 48px);
+            font-size: clamp(28px, 5vw, 46px);
             font-weight: 700;
             line-height: 1.2;
-            max-width: 680px;
-            margin: 0 auto 20px;
+            max-width: 700px;
+            margin: 0 auto 12px;
         }
         .hero h1 span { color: var(--usu-gold); }
-        .hero p {
-            font-size: 18px;
+        .hero .acronym {
+            font-size: 14px;
+            color: rgba(255,255,255,0.60);
+            margin-bottom: 24px;
+            letter-spacing: 0.03em;
+        }
+        .hero .tagline {
+            font-size: 17px;
             color: rgba(255,255,255,0.80);
-            max-width: 560px;
+            max-width: 600px;
+            margin: 0 auto 16px;
+        }
+        .hero .factsheet-note {
+            font-size: 15px;
+            color: rgba(255,255,255,0.70);
+            max-width: 580px;
             margin: 0 auto 36px;
         }
         .hero-cta {
             display: inline-block;
             background: var(--usu-gold);
             color: var(--usu-navy);
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
-            padding: 16px 36px;
+            padding: 16px 44px;
             border-radius: 50px;
             text-decoration: none;
             transition: opacity .15s;
         }
         .hero-cta:hover { opacity: .88; }
-        .hero-sub {
-            margin-top: 14px;
-            font-size: 13px;
-            color: rgba(255,255,255,0.50);
-        }
 
-        /* ── What it does ─────────────────────────────────────────────── */
-        .section { padding: 64px 24px; max-width: 1040px; margin: 0 auto; }
-        .section-label {
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--usu-gold);
-            margin-bottom: 8px;
+        /* ── Feature cards ── */
+        .features-section {
+            background: #fff;
+            padding: 56px 24px;
         }
-        .section h2 {
-            font-size: clamp(22px, 3vw, 32px);
-            font-weight: 700;
-            color: var(--usu-navy);
-            margin-bottom: 16px;
+        .features-inner {
+            max-width: 960px;
+            margin: 0 auto;
         }
-        .section > p {
-            font-size: 16px;
-            color: var(--text-muted);
-            max-width: 640px;
-            margin-bottom: 48px;
-        }
-
-        /* ── Feature cards ────────────────────────────────────────────── */
         .cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 24px;
         }
         .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 28px 24px;
-            box-shadow: 0 2px 12px rgba(15,36,57,.07);
+            background: var(--usu-light);
+            border-radius: 14px;
+            padding: 28px 22px;
             border-top: 4px solid var(--usu-navy);
         }
-        .card-icon {
-            font-size: 28px;
-            margin-bottom: 12px;
-        }
         .card h3 {
-            font-size: 17px;
-            font-weight: 600;
+            font-size: 16px;
+            font-weight: 700;
             color: var(--usu-navy);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .card p {
             font-size: 14px;
@@ -128,95 +102,50 @@
             line-height: 1.6;
         }
 
-        /* ── Who it's for ─────────────────────────────────────────────── */
-        .audience-section {
-            background: #fff;
-            padding: 64px 24px;
+        /* ── About band ── */
+        .about-band {
+            background: var(--usu-navy);
+            color: rgba(255,255,255,0.80);
+            padding: 36px 24px;
+            text-align: center;
+            font-size: 15px;
+            line-height: 1.7;
         }
-        .audience-inner {
-            max-width: 1040px;
+        .about-band p { max-width: 760px; margin: 0 auto; }
+
+        /* ── How it works ── */
+        .how-section {
+            padding: 64px 24px;
+            max-width: 960px;
             margin: 0 auto;
         }
-        .audience-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-top: 40px;
-        }
-        .audience-item {
-            text-align: center;
-            padding: 24px 16px;
-            background: var(--usu-light);
-            border-radius: 12px;
-        }
-        .audience-item .aud-icon { font-size: 32px; margin-bottom: 10px; }
-        .audience-item p { font-size: 14px; font-weight: 600; color: var(--usu-navy); }
-
-        /* ── How it works ─────────────────────────────────────────────── */
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 24px;
-            margin-top: 40px;
-            counter-reset: step;
-        }
-        .step {
-            position: relative;
-            background: #fff;
-            border-radius: 16px;
-            padding: 28px 24px 24px;
-            box-shadow: 0 2px 12px rgba(15,36,57,.07);
-        }
-        .step::before {
-            counter-increment: step;
-            content: counter(step);
-            position: absolute;
-            top: -14px;
-            left: 24px;
-            width: 28px;
-            height: 28px;
-            background: var(--usu-navy);
-            color: #fff;
-            font-size: 13px;
+        .how-section h2 {
+            font-size: clamp(22px, 3vw, 30px);
             font-weight: 700;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 28px;
-            text-align: center;
+            color: var(--usu-navy);
+            margin-bottom: 8px;
         }
-        .step h3 { font-size: 16px; font-weight: 600; color: var(--usu-navy); margin-bottom: 8px; }
-        .step p  { font-size: 14px; color: var(--text-muted); }
-
-        /* ── Trust / disclaimer ────────────────────────────────────────── */
-        .trust-section {
-            background: linear-gradient(135deg, var(--usu-navy) 0%, var(--usu-blue) 100%);
-            padding: 56px 24px;
-            text-align: center;
-            color: #fff;
-        }
-        .trust-section h2 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
-        .trust-section p {
+        .how-section .how-intro {
             font-size: 15px;
-            color: rgba(255,255,255,0.75);
-            max-width: 560px;
-            margin: 0 auto 32px;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin-bottom: 40px;
+            line-height: 1.7;
         }
-        .trust-section a {
-            display: inline-block;
-            background: transparent;
-            border: 2px solid var(--usu-gold);
-            color: var(--usu-gold);
-            font-weight: 700;
-            padding: 13px 32px;
-            border-radius: 50px;
-            text-decoration: none;
-            transition: background .15s, color .15s;
-        }
-        .trust-section a:hover { background: var(--usu-gold); color: var(--usu-navy); }
+        .how-section .how-intro strong { color: var(--text-main); }
 
-        /* ── Footer ───────────────────────────────────────────────────── */
+        .how-highlight {
+            background: var(--usu-light);
+            border-left: 4px solid var(--usu-gold);
+            border-radius: 8px;
+            padding: 20px 24px;
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            max-width: 700px;
+        }
+
+        /* ── Footer ── */
         footer {
             background: #0a1a2b;
             color: rgba(255,255,255,0.45);
@@ -229,117 +158,58 @@
 </head>
 <body>
 
-<!-- ── HERO ───────────────────────────────────────────────────────────── -->
+<!-- ── HERO ── -->
 <section class="hero">
-    <div class="hero-badge">USU Extension AI Assistant</div>
-    <h1>Research-backed answers<br><span>for Utah's farmers, families &amp; communities</span></h1>
-    <p>
-        Ask questions about agriculture, gardening, nutrition, livestock, water, and more —
-        and get instant answers grounded in USU Extension's library of peer-reviewed fact sheets and research.
+    <h1>Meet <span>AGNES</span>, your USU Extension research assistant.</h1>
+    <p class="acronym"><strong>A</strong>gricultural &amp; <strong>N</strong>atural resource <strong>G</strong>uidance <strong>E</strong>xtension <strong>S</strong>ystem</p>
+    <p class="tagline">
+        Easily find research-backed answers to all of your questions by searching our database of over 11,000 USU Factsheets.
     </p>
-    <a class="hero-cta" href="{% url 'county_select' %}">Get Started — Select Your County</a>
-    <p class="hero-sub">Free to use · No account required · Available 24/7</p>
+    <p class="factsheet-note">
+        Ask questions about agriculture, gardening, nutrition, livestock, water, and more, and get instant answers grounded in USU Extension's library of peer-reviewed fact sheets and research.
+    </p>
+    <a class="hero-cta" href="{% url 'county_select' %}">Ask AGNES</a>
 </section>
 
-<!-- ── WHAT IT DOES ───────────────────────────────────────────────────── -->
-<section class="section">
-    <p class="section-label">What it does</p>
-    <h2>Your local Extension expert, always available</h2>
-    <p>
-        The USU Extension AI Assistant is a conversational tool built in partnership with Utah State University.
-        It connects you with credible, locally relevant answers drawn from thousands of USU fact sheets,
-        so you spend less time searching and more time doing.
-    </p>
-    <div class="cards">
-        <div class="card">
-            <div class="card-icon">🌾</div>
-            <h3>Ask in plain language</h3>
-            <p>No jargon needed. Type your question the same way you'd ask a neighbour — the assistant handles the rest.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon">📄</div>
-            <h3>Grounded in USU research</h3>
-            <p>Every answer is backed by USU Extension's library of fact sheets and research publications — not generic web content.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon">📍</div>
-            <h3>Tailored to your county</h3>
-            <p>Start by selecting your Utah county so the assistant can surface information most relevant to your local conditions.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon">🤝</div>
-            <h3>Connect with a real expert</h3>
-            <p>Can't find what you need? The assistant can connect you directly with your local Extension agent for personalised help.</p>
-        </div>
-    </div>
-</section>
-
-<!-- ── WHO IT'S FOR ────────────────────────────────────────────────────── -->
-<section class="audience-section">
-    <div class="audience-inner">
-        <p class="section-label">Who it's for</p>
-        <h2>Built for everyone in Utah</h2>
-        <div class="audience-grid">
-            <div class="audience-item">
-                <div class="aud-icon">🚜</div>
-                <p>Farmers &amp; Producers</p>
+<!-- ── FEATURE CARDS ── -->
+<section class="features-section">
+    <div class="features-inner">
+        <div class="cards">
+            <div class="card">
+                <h3>Grounded in USU research</h3>
+                <p>Every answer is backed by USU Extension's library of fact sheets and research publications — not generic web content.</p>
             </div>
-            <div class="audience-item">
-                <div class="aud-icon">🌻</div>
-                <p>Home Gardeners</p>
+            <div class="card">
+                <h3>Tailored to your county</h3>
+                <p>Start by selecting your Utah county so the assistant can surface information most relevant to your local conditions.</p>
             </div>
-            <div class="audience-item">
-                <div class="aud-icon">🏠</div>
-                <p>Homeowners</p>
-            </div>
-            <div class="audience-item">
-                <div class="aud-icon">📚</div>
-                <p>Educators</p>
-            </div>
-            <div class="audience-item">
-                <div class="aud-icon">🌎</div>
-                <p>Community Leaders</p>
-            </div>
-            <div class="audience-item">
-                <div class="aud-icon">🍎</div>
-                <p>Families &amp; Consumers</p>
+            <div class="card">
+                <h3>Connect with a real expert</h3>
+                <p>Can't find what you need? The assistant can connect you directly with your local Extension agent for personalised help.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ── HOW IT WORKS ────────────────────────────────────────────────────── -->
-<section class="section">
-    <p class="section-label">How it works</p>
-    <h2>Three simple steps</h2>
-    <div class="steps">
-        <div class="step">
-            <h3>Select your county</h3>
-            <p>Choose your Utah county so the assistant can prioritise information relevant to your local climate and conditions.</p>
-        </div>
-        <div class="step">
-            <h3>Ask your question</h3>
-            <p>Type your question in plain English — anything from pest management to water rights to nutrition.</p>
-        </div>
-        <div class="step">
-            <h3>Get a research-backed answer</h3>
-            <p>Receive an instant response with links to the USU fact sheets that back it up. Still need help? Request a follow-up from your county Extension agent.</p>
-        </div>
+<!-- ── ABOUT BAND ── -->
+<section class="about-band">
+    <p>
+        Your local extension expert, always available. The USU Extension AI Assistant is a conversational tool built in partnership with Utah State University. It connects you with credible, locally relevant answers drawn from thousands of USU fact sheets, so you spend less time searching and more time doing.
+    </p>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="how-section">
+    <h2>How it works</h2>
+    <p class="how-intro">
+        USU has over 13,000 research-based fact sheets across more than 100 webpages — finding the accurate information you need can be challenging. <strong>AGNES stores all of the fact sheets in one convenient location and uses abstractive summarization to answer your questions.</strong> No hallucinations, only research-backed answers with direct sources for your reference.
+    </p>
+    <div class="how-highlight">
+        <strong>Tip:</strong> The more specific your question, the better AGNES can match it to the right fact sheets. Try including details like your crop type, region, or specific problem.
     </div>
 </section>
 
-<!-- ── TRUST / CTA ─────────────────────────────────────────────────────── -->
-<section class="trust-section">
-    <h2>Trusted information, right when you need it</h2>
-    <p>
-        This tool is intended to complement — not replace — the expertise of USU Extension professionals.
-        For complex questions, legal matters, or situations requiring an on-site visit, always consult your
-        local Extension agent.
-    </p>
-    <a href="{% url 'county_select' %}">Start a Conversation →</a>
-</section>
-
-<!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+<!-- ── FOOTER ── -->
 <footer>
     <p>
         A service of <a href="https://extension.usu.edu" target="_blank">Utah State University Extension</a> ·
