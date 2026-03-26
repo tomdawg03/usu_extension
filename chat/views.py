@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -9,6 +10,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 
 from chat.services.article_search import search_articles
+from chat.services.chat_log_store import append_event_to_gcs, build_chat_log_event
 from chat.services.chat_service import get_reply
 from chat.services.hardiness import get_hardiness_for_zip
 from chat.services.retrieval import get_county_contacts
@@ -99,6 +101,8 @@ def chat_api(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
+    request_id = str(uuid.uuid4())
+
     conversation = None
     if conversation_id:
         try:
@@ -115,6 +119,17 @@ def chat_api(request):
             role=Message.ROLE_USER,
             content=message,
         )
+        user_event = build_chat_log_event(
+            request_id=request_id,
+            message_id=str(uuid.uuid4()),
+            conversation_id=str(conversation.id),
+            role=Message.ROLE_USER,
+            content=message,
+            county=county,
+            category=category,
+            subcategory=subcategory,
+        )
+        append_event_to_gcs(user_event)
 
     result = get_reply(
         message,
@@ -134,6 +149,17 @@ def chat_api(request):
             role=Message.ROLE_ASSISTANT,
             content=reply_text,
         )
+        assistant_event = build_chat_log_event(
+            request_id=request_id,
+            message_id=str(uuid.uuid4()),
+            conversation_id=str(conversation.id),
+            role=Message.ROLE_ASSISTANT,
+            content=reply_text,
+            county=county,
+            category=category,
+            subcategory=subcategory,
+        )
+        append_event_to_gcs(assistant_event)
 
     return JsonResponse({'reply': reply_text, 'conversation_id': str(conversation.id)})
 

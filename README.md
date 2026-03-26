@@ -32,9 +32,18 @@ the actual factsheet content rather than general internet knowledge.
 
 - Django + FastAPI hybrid backend
 - OpenAI Assistants API with vectorized document retrieval
+- Google Cloud Storage JSONL chat logging
 - Uvicorn for ASGI serving
 - SQLite for lightweight local persistence
 - Deployed via Docker
+
+## Environment variables
+
+- `OPENAI_API_KEY` - OpenAI API key for assistant responses.
+- `GCS_CHAT_LOG_BUCKET` - GCS bucket name for chat log storage.
+- `GCS_CHAT_LOG_PREFIX` - Object prefix for log paths (default: `chat-logs`).
+- `GCP_PROJECT` - Optional Google Cloud project ID override.
+- `APP_ENV` - Optional environment label included in log events.
 
 ## Who this is for
 
