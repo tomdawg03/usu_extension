@@ -51,7 +51,11 @@ def build_chat_log_event(
 def append_event_to_gcs(event: dict) -> bool:
     bucket_name = (getattr(settings, "GCS_CHAT_LOG_BUCKET", "") or "").strip()
     if not bucket_name:
-        logger.debug("GCS chat log bucket not configured; skipping event write")
+        # Cloud Run may not show debug logs; print so we can diagnose quickly.
+        print(
+            "[chatlog] skip: GCS_CHAT_LOG_BUCKET not configured. "
+            f"conversation_id={event.get('conversation_id')!r} message_id={event.get('message_id')!r} role={event.get('role')!r}"
+        )
         return False
 
     conversation_id = str(event.get("conversation_id", "")).strip()
@@ -72,8 +76,18 @@ def append_event_to_gcs(event: dict) -> bool:
 
         line = json.dumps(event, ensure_ascii=True) + "\n"
         blob.upload_from_string(existing + line, content_type="application/json")
+        print(
+            "[chatlog] wrote: "
+            f"bucket={bucket_name!r} path={blob_path!r} message_id={message_id!r} role={event.get('role')!r}"
+        )
         return True
     except Exception as exc:
+        # Print for visibility in Cloud Run logs even if logging config filters the exception.
+        print(
+            "[chatlog] failed: "
+            f"bucket={bucket_name!r} path={blob_path!r} conversation_id={conversation_id!r} "
+            f"message_id={message_id!r} role={event.get('role')!r} err={exc!r}"
+        )
         logger.exception(
             "Failed to append chat log event to GCS bucket=%s path=%s conversation_id=%s message_id=%s err=%s",
             bucket_name,

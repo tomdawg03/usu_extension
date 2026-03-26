@@ -129,7 +129,13 @@ def chat_api(request):
             category=category,
             subcategory=subcategory,
         )
-        append_event_to_gcs(user_event)
+        ok = append_event_to_gcs(user_event)
+        if not ok:
+            logger.warning(
+                "Chat log write failed for user message conversation_id=%s role=%s",
+                conversation.id,
+                Message.ROLE_USER,
+            )
 
     result = get_reply(
         message,
@@ -159,7 +165,13 @@ def chat_api(request):
             category=category,
             subcategory=subcategory,
         )
-        append_event_to_gcs(assistant_event)
+        ok = append_event_to_gcs(assistant_event)
+        if not ok:
+            logger.warning(
+                "Chat log write failed for assistant message conversation_id=%s role=%s",
+                conversation.id,
+                Message.ROLE_ASSISTANT,
+            )
 
     return JsonResponse({'reply': reply_text, 'conversation_id': str(conversation.id)})
 
