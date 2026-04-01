@@ -8,6 +8,7 @@ urlpatterns = [
     path('chat/', views.chat_view, name='chat'),
     path('search/', views.search_view, name='search'),
     path('hardiness/', views.hardiness_view, name='hardiness'),
+    path('api/chat/warm', views.warm_chat_api, name='chat_warm'),
     path('api/chat', views.chat_api, name='chat_api'),
     path('api/search', views.search_api, name='search_api'),
     path('api/hardiness', views.hardiness_api, name='hardiness_api'),

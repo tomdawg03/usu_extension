@@ -45,6 +45,19 @@ the actual factsheet content rather than general internet knowledge.
 - `GCP_PROJECT` - Optional Google Cloud project ID override.
 - `APP_ENV` - Optional environment label included in log events.
 
+## Export chat table (CSV)
+
+The chat logger writes JSONL events into GCS, including:
+- `role=user` for questions
+- `role=assistant` for answers
+- `role=feedback` for “Was this helpful?” clicks (`rating` is `up` or `down`)
+
+To export a CSV table (chat id / question / answer / helpful yes/no), run:
+
+```bash
+python scripts/export_chat_logs_table.py --bucket YOUR_BUCKET --prefix chat-logs --date 2026-03-26 --out chat_table.csv
+```
+
 ## Who this is for
 
 If you are interested in how to build a retrieval-augmented chatbot grounded

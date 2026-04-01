@@ -10,6 +10,12 @@ class Conversation(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     county = models.CharField(max_length=100, blank=True)
+    openai_thread_id = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="OpenAI Assistants API thread id for this conversation (reuse across turns).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
