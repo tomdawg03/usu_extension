@@ -3,8 +3,6 @@ import logging
 from datetime import datetime, timezone
 
 from django.conf import settings
-from google.cloud import storage
-from google.cloud.exceptions import NotFound
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +54,17 @@ def append_event_to_gcs(event: dict) -> bool:
             "[chatlog] skip: GCS_CHAT_LOG_BUCKET not configured. "
             f"conversation_id={event.get('conversation_id')!r} message_id={event.get('message_id')!r} role={event.get('role')!r}"
         )
+        return False
+
+    try:
+        from google.cloud import storage
+        from google.cloud.exceptions import NotFound
+    except ImportError:
+        print(
+            "[chatlog] skip: google-cloud-storage not installed "
+            f"(pip install google-cloud-storage). conversation_id={event.get('conversation_id')!r}"
+        )
+        logger.warning("GCS logging skipped: google-cloud-storage is not installed")
         return False
 
     conversation_id = str(event.get("conversation_id", "")).strip()

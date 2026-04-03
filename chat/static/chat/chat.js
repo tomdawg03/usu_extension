@@ -12,6 +12,15 @@ let isSending = false;
 let conversationId = null;
 let lastUserMessage = '';
 
+const MESSAGE_INPUT_MAX_PX = 200;
+
+function resizeMessageInput() {
+    if (!messageInput || messageInput.tagName !== 'TEXTAREA') return;
+    messageInput.style.height = 'auto';
+    var next = Math.min(messageInput.scrollHeight, MESSAGE_INPUT_MAX_PX);
+    messageInput.style.height = next + 'px';
+}
+
 // Chat history for context (max 20 messages)
 var chatHistory = [];
 
@@ -252,6 +261,7 @@ async function sendMessage() {
 
     addMessage(message, true);
     messageInput.value = '';
+    resizeMessageInput();
     var chatRoot = document.querySelector('.chat-container');
     if (chatRoot) chatRoot.classList.add('chat-active');
     sendButton.disabled = true;
@@ -342,14 +352,17 @@ document.querySelectorAll('.suggestion-pill').forEach(btn => {
 
 // Event listeners
 sendButton.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
+messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
         sendMessage();
     }
 });
+messageInput.addEventListener('input', resizeMessageInput);
 
 // Focus input on load
 messageInput.focus();
+resizeMessageInput();
 
 // Restore existing conversation for this tab if available
 try {

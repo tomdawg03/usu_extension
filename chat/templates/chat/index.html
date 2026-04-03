@@ -236,6 +236,7 @@
             color: #1f2937;
             border: 1px solid #d1d5db;
             border-bottom-right-radius: 6px;
+            white-space: pre-wrap;
         }
 
         .message.bot {
@@ -253,27 +254,34 @@
         .chat-message a { color: #0f4c81; font-weight: 500; text-decoration: underline; }
 
         .chat-input-container {
-            padding: 6px 8px 6px 18px;
-            border-radius: 9999px;
+            padding: 8px 10px 8px 14px;
+            border-radius: 22px;
         }
 
         .chat-input-row {
             display: flex;
             gap: 10px;
-            align-items: center;
+            align-items: flex-end;
             width: 100%;
         }
 
         .chat-input {
             flex: 1;
             min-width: 0;
-            padding: 12px 8px 12px 4px;
+            min-height: 44px;
+            max-height: 200px;
+            padding: 10px 8px 10px 6px;
             border: none;
-            border-radius: 9999px;
+            border-radius: 14px;
             font-size: 15px;
             font-family: inherit;
+            line-height: 1.45;
             transition: box-shadow 0.2s ease;
             background-color: transparent;
+            resize: none;
+            overflow-y: auto;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
 
         .chat-input::placeholder {
@@ -525,13 +533,14 @@
             </div>
             <div class="chat-input-container">
                 <div class="chat-input-row">
-                    <input
-                        type="text"
+                    <textarea
                         class="chat-input"
                         id="messageInput"
                         placeholder="Ask anything…"
                         autocomplete="off"
-                    >
+                        rows="1"
+                        aria-label="Your question"
+                    ></textarea>
                     <button class="send-button" id="sendButton">Send</button>
                 </div>
             </div>
@@ -540,6 +549,6 @@
 
     {{ subcategory_map|json_script:"subcategory-map-json" }}
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="{% static 'chat/chat.js' %}?v=12"></script>
+    <script src="{% static 'chat/chat.js' %}?v=13"></script>
 </body>
 </html>
