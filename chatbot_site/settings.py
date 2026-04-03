@@ -133,3 +133,9 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 ESCALATION_EMAIL = os.environ.get('ESCALATION_EMAIL', 'lauren.knox@usu.edu')
 ESCALATION_CC_EMAIL = os.environ.get('ESCALATION_CC_EMAIL', 'christopher.t.corcoran@usu.edu')
+
+# GCS chat logging
+GCS_CHAT_LOG_BUCKET = os.environ.get('GCS_CHAT_LOG_BUCKET', '').strip()
+GCS_CHAT_LOG_PREFIX = os.environ.get('GCS_CHAT_LOG_PREFIX', 'chat-logs').strip() or 'chat-logs'
+GCP_PROJECT = os.environ.get('GCP_PROJECT', '').strip()
+APP_ENV = os.environ.get('APP_ENV', '').strip()

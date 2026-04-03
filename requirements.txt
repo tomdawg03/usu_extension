@@ -6,3 +6,4 @@ uvicorn
 openai>=1.0.0
 pydantic
 python-dotenv>=1.0.0
+google-cloud-storage
