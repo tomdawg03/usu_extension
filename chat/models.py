@@ -16,6 +16,12 @@ class Conversation(models.Model):
         default="",
         help_text="OpenAI Assistants API thread id for this conversation (reuse across turns).",
     )
+    openai_last_response_id = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="OpenAI Responses API previous response id for multi-turn chaining.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

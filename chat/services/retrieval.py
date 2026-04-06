@@ -67,6 +67,43 @@ def to_public_url(link: str) -> str:
     return stripped
 
 
+_FILENAME_TO_LINK_CACHE: dict[str, str | None] = {}
+
+
+def resolve_fact_sheet_url_by_filename(filename: str, db_path) -> str | None:
+    """
+    Map a cited filename (from OpenAI file_search / vector store) to a public URL
+    using links in fact_sheets.db. Falls back to extension.usu.edu/files-ou/ for .pdf.
+    """
+    if not filename or not isinstance(filename, str):
+        return None
+    target = Path(filename.strip()).name.lower()
+    if not target:
+        return None
+    if target in _FILENAME_TO_LINK_CACHE:
+        return _FILENAME_TO_LINK_CACHE[target]
+
+    found: str | None = None
+    if db_path and Path(db_path).exists():
+        try:
+            conn = sqlite3.connect(db_path)
+            cur = conn.execute("SELECT link FROM pdfs")
+            for (link,) in cur.fetchall():
+                link = link or ""
+                if Path(link).name.lower() == target:
+                    found = to_public_url(link)
+                    break
+            conn.close()
+        except Exception:
+            found = None
+
+    if not found and target.endswith(".pdf"):
+        found = f"https://extension.usu.edu/files-ou/{target}"
+
+    _FILENAME_TO_LINK_CACHE[target] = found
+    return found
+
+
 def retrieve_relevant_papers(question, db_path, top_k=TOP_K, min_score=MIN_RELEVANCE_SCORE):
     """
     Return list of dicts with keys: title, subject, content, link.

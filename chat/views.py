@@ -207,12 +207,20 @@ def chat_api(request):
         subcategory=subcategory,
         chat_history=chat_history,
         openai_thread_id=getattr(conversation, "openai_thread_id", "") or "",
+        openai_last_response_id=getattr(conversation, "openai_last_response_id", "") or "",
     )
 
     new_thread_id = result.get("openai_thread_id")
+    new_response_id = result.get("openai_last_response_id")
+    update_fields = []
     if new_thread_id and getattr(conversation, "openai_thread_id", "") != new_thread_id:
         conversation.openai_thread_id = new_thread_id
-        conversation.save(update_fields=["openai_thread_id"])
+        update_fields.append("openai_thread_id")
+    if new_response_id and getattr(conversation, "openai_last_response_id", "") != new_response_id:
+        conversation.openai_last_response_id = new_response_id
+        update_fields.append("openai_last_response_id")
+    if update_fields:
+        conversation.save(update_fields=update_fields)
 
     if 'error' in result:
         return JsonResponse({'error': result['error']}, status=503)

@@ -1,6 +1,6 @@
 """
-Chat service: calls OpenAI Assistant directly (no separate FastAPI middleman).
-Auto-generates source links by matching reply keywords against the URL CSV.
+Chat service: calls OpenAI (Responses API with file_search, or Assistants API).
+Sources for Responses mode come only from retrieval/citations, not CSV keyword matching.
 """
 
 import csv
@@ -10,7 +10,12 @@ import re
 import time
 from collections import Counter
 from pathlib import Path
-from chat.services.retrieval import retrieve_relevant_papers, verify_retrieval_relevance
+
+from chat.services.retrieval import (
+    resolve_fact_sheet_url_by_filename,
+    retrieve_relevant_papers,
+    verify_retrieval_relevance,
+)
 
 from django.conf import settings
 
@@ -250,6 +255,103 @@ def _build_sources_section(reply_text: str, user_message: str = "") -> str:
     return "\n".join(lines)
 
 
+def _use_responses_api() -> bool:
+    if not getattr(settings, "CHAT_USE_RESPONSES_API", False):
+        return False
+    vs = getattr(settings, "OPENAI_VECTOR_STORE_IDS", None) or []
+    return bool(vs)
+
+
+def _build_sources_from_retrieval(response, *, db_path) -> str:
+    """Build **Sources** from file_citation annotations and file_search_call.results only."""
+    if response is None:
+        return ""
+    seen_urls: set[str] = set()
+    ordered: list[str] = []
+    min_score = getattr(settings, "FILE_SEARCH_MIN_RESULT_SCORE", None)
+
+    def add_filename(fn: str) -> None:
+        if not fn or len(ordered) >= MAX_SOURCES:
+            return
+        url = resolve_fact_sheet_url_by_filename(fn, db_path)
+        if not url or url in seen_urls:
+            return
+        seen_urls.add(url)
+        ordered.append(url)
+
+    for item in getattr(response, "output", None) or []:
+        itype = getattr(item, "type", None)
+        if itype == "message":
+            for block in getattr(item, "content", None) or []:
+                if getattr(block, "type", None) != "output_text":
+                    continue
+                for ann in getattr(block, "annotations", None) or []:
+                    atype = getattr(ann, "type", None)
+                    if atype in ("file_citation", "container_file_citation"):
+                        add_filename(getattr(ann, "filename", "") or "")
+        elif itype == "file_search_call":
+            for res in getattr(item, "results", None) or []:
+                if min_score is not None:
+                    sc = getattr(res, "score", None)
+                    if sc is not None and sc < float(min_score):
+                        continue
+                add_filename(getattr(res, "filename", "") or "")
+
+    if not ordered:
+        return ""
+    lines = ["\n\n**Sources:**"]
+    for url in ordered:
+        title = _url_to_title(url)
+        lines.append(f"- [{title}]({url})")
+    return "\n".join(lines)
+
+
+def _call_openai_responses(
+    message: str,
+    api_key: str,
+    previous_response_id: str | None = None,
+) -> tuple[str | None, str | None, object | None]:
+    """
+    Call OpenAI Responses API with file_search over configured vector stores.
+    Returns (reply_text, response_id, raw_response). On failure, text may be None.
+    """
+    vs_ids = getattr(settings, "OPENAI_VECTOR_STORE_IDS", None) or []
+    if not vs_ids:
+        return None, None, None
+    try:
+        client = OpenAI(api_key=api_key)
+        kwargs: dict = {
+            "model": getattr(settings, "OPENAI_RESPONSES_MODEL", "gpt-4o"),
+            "input": message,
+            "tools": [{"type": "file_search", "vector_store_ids": list(vs_ids)}],
+            "include": ["file_search_call.results"],
+        }
+        prev = (previous_response_id or "").strip()
+        if prev:
+            kwargs["previous_response_id"] = prev
+        cap = getattr(settings, "CHAT_ASSISTANT_MAX_COMPLETION_TOKENS", None)
+        if cap is not None and cap > 0:
+            kwargs["max_output_tokens"] = int(cap)
+        resp = client.responses.create(**kwargs)
+    except Exception as e:
+        logger.warning("OpenAI responses.create failed: %s", e)
+        return None, None, None
+
+    rid = getattr(resp, "id", None)
+    status = getattr(resp, "status", None)
+    text = (getattr(resp, "output_text", None) or "").strip() or None
+
+    if getattr(resp, "error", None):
+        logger.warning("OpenAI response error: %s", resp.error)
+        return None, rid, resp
+
+    if status == "failed":
+        logger.warning("OpenAI response ended with status failed")
+        return None, rid, resp
+
+    return text, rid, resp
+
+
 def _run_create_kwargs() -> dict:
     cap = getattr(settings, "CHAT_ASSISTANT_MAX_COMPLETION_TOKENS", None)
     if cap is None or cap <= 0:
@@ -355,6 +457,7 @@ def get_reply(
     subcategory: str = "",
     chat_history: list | None = None,
     openai_thread_id: str = "",
+    openai_last_response_id: str = "",
 ) -> dict:
     """
     Get a reply from the OpenAI Assistant.
@@ -381,6 +484,53 @@ def get_reply(
     )
 
     existing_thread = (openai_thread_id or "").strip() or None
+    existing_response = (openai_last_response_id or "").strip() or None
+    db_path = getattr(settings, "FACT_SHEETS_DB_PATH", None)
+
+    if _use_responses_api():
+        logger.info("Calling OpenAI Responses API for: %s", message_clean[:80])
+        reply, resp_id, raw = _call_openai_responses(
+            full_message, api_key, previous_response_id=existing_response
+        )
+        if reply:
+            reply = _clean_reply(reply)
+            sources = _build_sources_from_retrieval(raw, db_path=db_path)
+            reply = (reply + sources).strip()
+
+            if db_path and getattr(settings, "CHAT_RETRIEVAL_VERIFY", True):
+                papers = retrieve_relevant_papers(message_clean, db_path)
+                check = verify_retrieval_relevance(message_clean, papers, answer=reply)
+                logger.info(
+                    "Retrieval check — confident=%s, score=%s, overlap=%.2f",
+                    check["confident"],
+                    check["best_score"],
+                    check["overlap_ratio"],
+                )
+                if check["fallback_to_search"]:
+                    reply += (
+                        "\n\n> **Tip:** The answer above is based on general knowledge. "
+                        "For more specific USU Extension resources, try our "
+                        "[article search](/search/?county=" + (county or "") + ") "
+                        "to browse fact sheets directly."
+                    )
+
+            logger.info("Reply from OpenAI Responses API")
+            out = {"reply": reply or FALLBACK_REPLY}
+            if resp_id:
+                out["openai_last_response_id"] = resp_id
+            return out
+
+        logger.warning("OpenAI Responses returned no reply for: %s", message_clean)
+        out = {
+            "reply": (
+                "I wasn't able to find an answer to that question in our resources. "
+                "Please try rephrasing, or click **No** below to contact your local "
+                "Extension office directly — they'll be happy to help."
+            )
+        }
+        if resp_id:
+            out["openai_last_response_id"] = resp_id
+        return out
 
     logger.info("Calling OpenAI assistant for: %s", message_clean[:80])
     reply, thread_out = _call_openai_assistant(
@@ -392,14 +542,14 @@ def get_reply(
         sources = _build_sources_section(reply, user_message=message_clean)
         reply = (reply + sources).strip()
 
-        # Retrieval verification — check if fact sheets actually match the query
-        db_path = getattr(settings, 'FACT_SHEETS_DB_PATH', None)
         if db_path and getattr(settings, "CHAT_RETRIEVAL_VERIFY", True):
             papers = retrieve_relevant_papers(message_clean, db_path)
-            check  = verify_retrieval_relevance(message_clean, papers, answer=reply)
+            check = verify_retrieval_relevance(message_clean, papers, answer=reply)
             logger.info(
                 "Retrieval check — confident=%s, score=%s, overlap=%.2f",
-                check["confident"], check["best_score"], check["overlap_ratio"],
+                check["confident"],
+                check["best_score"],
+                check["overlap_ratio"],
             )
             if check["fallback_to_search"]:
                 reply += (
@@ -415,7 +565,6 @@ def get_reply(
             out["openai_thread_id"] = thread_out
         return out
 
-    # Assistant returned nothing — prompt user to use escalation form
     logger.warning("Assistant returned no reply for: %s", message_clean)
     out = {
         "reply": (
@@ -441,6 +590,8 @@ def create_warm_conversation(county: str) -> dict:
     api_key = getattr(settings, "OPENAI_API_KEY", "") or ""
     conv = Conversation.objects.create(county=county or "")
     if not api_key:
+        return {"conversation_id": str(conv.id), "openai_thread_id": ""}
+    if _use_responses_api():
         return {"conversation_id": str(conv.id), "openai_thread_id": ""}
     try:
         client = OpenAI(api_key=api_key)

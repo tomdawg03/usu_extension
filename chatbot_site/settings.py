@@ -126,6 +126,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # OpenAI
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
+# Responses API + file_search (replaces Assistants when enabled and vector stores are set)
+_openai_vs = os.environ.get("OPENAI_VECTOR_STORE_IDS", "").strip()
+OPENAI_VECTOR_STORE_IDS = [x.strip() for x in _openai_vs.split(",") if x.strip()]
+# Default: use Responses API when vector store IDs are configured
+CHAT_USE_RESPONSES_API = os.environ.get(
+    "CHAT_USE_RESPONSES_API",
+    "true" if OPENAI_VECTOR_STORE_IDS else "false",
+).lower() in ("1", "true", "yes")
+OPENAI_RESPONSES_MODEL = os.environ.get("OPENAI_RESPONSES_MODEL", "gpt-4o").strip()
+# Optional: drop file_search results below this relevance score (0–1). Empty = no score filter.
+_fs_min = os.environ.get("FILE_SEARCH_MIN_RESULT_SCORE", "").strip()
+FILE_SEARCH_MIN_RESULT_SCORE = float(_fs_min) if _fs_min else None
 
 # Backend data
 FACT_SHEETS_DB_PATH = BASE_DIR / "Backend" / "fact_sheets.db"
