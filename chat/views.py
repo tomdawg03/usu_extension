@@ -13,8 +13,12 @@ from django.utils import timezone
 from django.utils.formats import date_format
 
 from chat.services.article_search import search_articles
-from chat.services.chat_log_store import append_event_to_gcs, build_chat_log_event
-from chat.services.chat_service import get_reply
+from chat.services.chat_log_store import (
+    append_event_to_gcs,
+    build_chat_log_event,
+    build_feedback_log_event,
+)
+from chat.services.chat_service import create_warm_conversation, get_reply
 from chat.services.hardiness import get_hardiness_for_zip
 from chat.services.retrieval import get_county_contacts
 from chat.categories import MAIN_CATEGORIES, SUBCATEGORY_MAP
@@ -90,6 +94,26 @@ def search_api(request):
         return JsonResponse({"results": []})
     results = search_articles(q, db_path)
     return JsonResponse({"results": results})
+
+
+@require_http_methods(["POST"])
+def warm_chat_api(request):
+    """
+    Optional: called when the chat page loads to create a Conversation + empty
+    OpenAI thread so the first user message skips threads.create.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    county = (data.get('county') or '').strip()
+    if not getattr(settings, 'OPENAI_API_KEY', ''):
+        return JsonResponse({'error': 'Service unavailable'}, status=503)
+    out = create_warm_conversation(county)
+    return JsonResponse({
+        'conversation_id': out['conversation_id'],
+        'openai_thread_id': out.get('openai_thread_id') or '',
+    })
 
 
 @require_http_methods(["POST"])
@@ -182,7 +206,13 @@ def chat_api(request):
         category=category,
         subcategory=subcategory,
         chat_history=chat_history,
+        openai_thread_id=getattr(conversation, "openai_thread_id", "") or "",
     )
+
+    new_thread_id = result.get("openai_thread_id")
+    if new_thread_id and getattr(conversation, "openai_thread_id", "") != new_thread_id:
+        conversation.openai_thread_id = new_thread_id
+        conversation.save(update_fields=["openai_thread_id"])
 
     if 'error' in result:
         return JsonResponse({'error': result['error']}, status=503)
@@ -239,11 +269,30 @@ def feedback_api(request):
     except Conversation.DoesNotExist:
         return JsonResponse({'error': 'Conversation not found'}, status=404)
 
+    request_id = str(uuid.uuid4())
+    feedback_event_id = str(uuid.uuid4())
+
     Feedback.objects.create(
         conversation=conversation,
         rating=rating,
         comment=comment,
     )
+
+    event = build_feedback_log_event(
+        request_id=request_id,
+        message_id=feedback_event_id,
+        conversation_id=str(conversation.id),
+        rating=rating,
+        comment=comment,
+        county=conversation.county or "",
+    )
+    ok = append_event_to_gcs(event)
+    if not ok:
+        logger.warning(
+            "Chat log write failed for feedback conversation_id=%s rating=%s",
+            conversation.id,
+            rating,
+        )
 
     return JsonResponse({'status': 'ok'})
 

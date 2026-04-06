@@ -7,6 +7,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 EVENT_VERSION = 1
+FEEDBACK_ROLE = "feedback"
 
 
 def _utc_now_iso() -> str:
@@ -42,6 +43,42 @@ def build_chat_log_event(
         "subcategory": subcategory or "",
         "created_at": _utc_now_iso(),
         "source": "chat_api",
+        "app_env": getattr(settings, "APP_ENV", ""),
+    }
+
+
+def build_feedback_log_event(
+    *,
+    request_id: str,
+    message_id: str,
+    conversation_id: str,
+    rating: str,
+    comment: str = "",
+    county: str = "",
+    category: str = "",
+    subcategory: str = "",
+) -> dict:
+    """
+    Build a log record for the 'Was this helpful?' feedback action.
+
+    Note: the frontend only sends {conversation_id, rating, comment}, so we rely
+    on timestamps to associate feedback with the assistant answer immediately
+    before it when generating a Q/A table later.
+    """
+    return {
+        "event_version": EVENT_VERSION,
+        "request_id": request_id,
+        "message_id": message_id,
+        "conversation_id": conversation_id,
+        "role": FEEDBACK_ROLE,
+        "rating": rating,
+        "content": "",  # keep consistent keys with other events
+        "comment": comment or "",
+        "county": county or "",
+        "category": category or "",
+        "subcategory": subcategory or "",
+        "created_at": _utc_now_iso(),
+        "source": "feedback_api",
         "app_env": getattr(settings, "APP_ENV", ""),
     }
 

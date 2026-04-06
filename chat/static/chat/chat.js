@@ -375,6 +375,33 @@ try {
     }
 } catch(e) {}
 
+// Pre-create OpenAI thread + conversation when there is no tab session, so the
+// first user message skips threads.create (modest latency win).
+(function warmConversationIfNeeded() {
+    if (conversationId) return;
+    var county = localStorage.getItem('selected_county') || '';
+    var csrftoken = getCookie('csrftoken');
+    if (!csrftoken) return;
+    fetch('/api/chat/warm', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify({ county: county }),
+    })
+        .then(function(res) { return res.ok ? res.json() : null; })
+        .then(function(data) {
+            if (data && data.conversation_id) {
+                conversationId = data.conversation_id;
+                try {
+                    sessionStorage.setItem('conversation_id', conversationId);
+                } catch (e) {}
+            }
+        })
+        .catch(function() {});
+})();
+
 // Initial greeting from Agnes (insert before suggested questions for landing layout)
 if (chatMessages) {
     addMessage("Hi! I'm Agnes, your Extension office assistant.\n\nGo ahead and ask me a question about your farm, garden, or local Extension resources.", false, suggestionsSection || null, true);

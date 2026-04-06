@@ -155,3 +155,17 @@ APP_ENV = os.environ.get('APP_ENV', '').strip()
 # Free tier: max successful chat answers per IP per rolling window (see chat_api).
 CHAT_FREE_QUESTION_LIMIT = int(os.environ.get('CHAT_FREE_QUESTION_LIMIT', '7'))
 CHAT_FREE_QUESTION_WINDOW_HOURS = int(os.environ.get('CHAT_FREE_QUESTION_WINDOW_HOURS', '24'))
+
+# Chat latency / Assistants API
+# Poll OpenAI run status this often (seconds). Lower = slightly faster time-to-first-byte after the run finishes; too low may rate-limit.
+CHAT_ASSISTANT_POLL_SECONDS = float(os.environ.get('CHAT_ASSISTANT_POLL_SECONDS', '0.25'))
+# If False, skip fact-sheet overlap check after each reply (loads full PDF index; saves CPU/IO per message).
+CHAT_RETRIEVAL_VERIFY = os.environ.get('CHAT_RETRIEVAL_VERIFY', 'True') == 'True'
+# Source URL matching (keyword pool + cosine similarity on URL text)
+SOURCE_URL_TOP_FOR_SIMILARITY = int(os.environ.get('SOURCE_URL_TOP_FOR_SIMILARITY', '80'))
+SOURCE_URL_MIN_SIMILARITY = float(os.environ.get('SOURCE_URL_MIN_SIMILARITY', '0.06'))
+SOURCE_URL_MIN_OVERLAP = int(os.environ.get('SOURCE_URL_MIN_OVERLAP', '1'))
+SOURCE_URL_STRONG_OVERLAP = int(os.environ.get('SOURCE_URL_STRONG_OVERLAP', '4'))
+# Cap assistant output length (completion tokens per run). Empty = no cap. Typical short answers: 400–800.
+_ch_max = os.environ.get('CHAT_ASSISTANT_MAX_COMPLETION_TOKENS', '').strip()
+CHAT_ASSISTANT_MAX_COMPLETION_TOKENS = int(_ch_max) if _ch_max.isdigit() else None
