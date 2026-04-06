@@ -22,5 +22,9 @@ RUN chmod +x docker-entrypoint.sh
 # Collect static files (Django)
 RUN python manage.py collectstatic --noinput --clear 2>/dev/null || true
 
+# Create SQLite schema inside the image. If Cloud Run overrides CMD and skips
+# docker-entrypoint.sh, the app still has tables (until you add new migrations).
+RUN python manage.py migrate --noinput
+
 # Apply DB migrations on each container start, then run gunicorn (Cloud Run sets PORT)
 CMD ["./docker-entrypoint.sh"]
