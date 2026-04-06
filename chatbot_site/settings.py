@@ -4,6 +4,7 @@ Django settings for chatbot_site project.
 
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 # Load environment variables from .env (project root)
@@ -80,13 +81,23 @@ WSGI_APPLICATION = 'chatbot_site.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/stable/ref/settings/#databases
+#
+# Local: omit DATABASE_URL (or leave unset) to use SQLite (db.sqlite3).
+# Production (e.g. Cloud SQL): set DATABASE_URL to a PostgreSQL URL
+# (including Cloud SQL Unix socket: ?host=/cloudsql/PROJECT:REGION:INSTANCE).
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+_database_url = os.environ.get("DATABASE_URL", "").strip()
+if _database_url:
+    DATABASES = {
+        "default": dj_database_url.parse(_database_url, conn_max_age=600),
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        },
+    }
 
 
 # Internationalization
@@ -94,7 +105,8 @@ DATABASES = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# US Mountain Time (MST / MDT per daylight saving)
+TIME_ZONE = 'America/Denver'
 
 USE_I18N = True
 
@@ -139,3 +151,7 @@ GCS_CHAT_LOG_BUCKET = os.environ.get('GCS_CHAT_LOG_BUCKET', '').strip()
 GCS_CHAT_LOG_PREFIX = os.environ.get('GCS_CHAT_LOG_PREFIX', 'chat-logs').strip() or 'chat-logs'
 GCP_PROJECT = os.environ.get('GCP_PROJECT', '').strip()
 APP_ENV = os.environ.get('APP_ENV', '').strip()
+
+# Free tier: max successful chat answers per IP per rolling window (see chat_api).
+CHAT_FREE_QUESTION_LIMIT = int(os.environ.get('CHAT_FREE_QUESTION_LIMIT', '7'))
+CHAT_FREE_QUESTION_WINDOW_HOURS = int(os.environ.get('CHAT_FREE_QUESTION_WINDOW_HOURS', '24'))

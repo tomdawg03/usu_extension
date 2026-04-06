@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -8,6 +9,8 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.utils.formats import date_format
 
 from chat.services.article_search import search_articles
 from chat.services.chat_log_store import append_event_to_gcs, build_chat_log_event
@@ -15,9 +18,16 @@ from chat.services.chat_service import get_reply
 from chat.services.hardiness import get_hardiness_for_zip
 from chat.services.retrieval import get_county_contacts
 from chat.categories import MAIN_CATEGORIES, SUBCATEGORY_MAP
-from .models import Conversation, Message, Feedback
+from .models import ChatIpReplyLog, Conversation, Message, Feedback
 
 logger = logging.getLogger(__name__)
+
+
+def _client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip() or ''
+    return (request.META.get('REMOTE_ADDR') or '').strip() or 'unknown'
 
 @ensure_csrf_cookie
 def landing_view(request):
@@ -101,6 +111,35 @@ def chat_api(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
+    msg = (message or '').strip()
+    limit = getattr(settings, 'CHAT_FREE_QUESTION_LIMIT', 7)
+    window_hours = getattr(settings, 'CHAT_FREE_QUESTION_WINDOW_HOURS', 24)
+    client_ip = _client_ip(request)
+    if msg:
+        since = timezone.now() - timedelta(hours=window_hours)
+        recent_qs = ChatIpReplyLog.objects.filter(ip=client_ip, created_at__gte=since).order_by(
+            'created_at'
+        )
+        recent = recent_qs.count()
+        if recent >= limit:
+            oldest = recent_qs.first()
+            retry_at = (
+                oldest.created_at + timedelta(hours=window_hours)
+                if oldest
+                else timezone.now() + timedelta(hours=window_hours)
+            )
+            retry_local = timezone.localtime(retry_at)
+            retry_str = date_format(retry_local, format=r"l, F j, Y \a\t g:i A T")
+            return JsonResponse(
+                {
+                    'error': (
+                        f'You have reached the free question limit for AGNES '
+                        f'(last {window_hours} hours). You can try again after {retry_str}.'
+                    ),
+                },
+                status=429,
+            )
+
     request_id = str(uuid.uuid4())
 
     conversation = None
@@ -172,6 +211,8 @@ def chat_api(request):
                 conversation.id,
                 Message.ROLE_ASSISTANT,
             )
+        if msg:
+            ChatIpReplyLog.objects.create(ip=client_ip)
 
     return JsonResponse({'reply': reply_text, 'conversation_id': str(conversation.id)})
 

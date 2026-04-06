@@ -63,3 +63,15 @@ class Feedback(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+
+class ChatIpReplyLog(models.Model):
+    """One row per successful free-tier chat reply (rolling window per IP)."""
+
+    ip = models.CharField(max_length=45, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip", "created_at"]),
+        ]
+

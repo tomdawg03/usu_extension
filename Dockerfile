@@ -17,8 +17,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project code
 COPY . .
 
+RUN chmod +x docker-entrypoint.sh
+
 # Collect static files (Django)
 RUN python manage.py collectstatic --noinput --clear 2>/dev/null || true
 
-# Run gunicorn bound to 0.0.0.0:PORT so Cloud Run can send traffic
-CMD exec gunicorn chatbot_site.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0
+# Apply DB migrations on each container start, then run gunicorn (Cloud Run sets PORT)
+CMD ["./docker-entrypoint.sh"]
