@@ -104,6 +104,56 @@ def resolve_fact_sheet_url_by_filename(filename: str, db_path) -> str | None:
     return found
 
 
+def fact_sheets_for_sources_policy(
+    question: str,
+    db_path,
+    *,
+    min_score: int = 8,
+    min_keyword_overlap: float = 0.35,
+    max_scan: int = 80,
+    max_results: int = 25,
+) -> list:
+    """
+    Fact sheets safe to show under **Sources**: must hit min_score vs the question
+    and pass a keyword-overlap check on title/subject/content. Stricter than
+    retrieve_relevant_papers alone — reduces unrelated links from CSV or loose citations.
+    """
+    if not question or not isinstance(question, str) or not db_path or not Path(db_path).exists():
+        return []
+    q = question.strip()
+    if not q:
+        return []
+
+    papers = retrieve_relevant_papers(q, db_path, top_k=max_scan, min_score=min_score)
+    if not papers:
+        return []
+
+    q_kw = set(extract_keywords(q))
+    if not q_kw:
+        return []
+
+    filtered = []
+    for p in papers:
+        blob = (
+            f"{p.get('title') or ''} {p.get('subject') or ''} "
+            f"{(p.get('content') or '')[:2000]}"
+        ).lower()
+        if len(q_kw) == 1:
+            kw = next(iter(q_kw))
+            if kw not in blob:
+                continue
+        else:
+            matched = {kw for kw in q_kw if kw in blob}
+            overlap = len(matched) / len(q_kw)
+            if overlap < min_keyword_overlap:
+                continue
+        filtered.append(p)
+        if len(filtered) >= max_results:
+            break
+
+    return filtered
+
+
 def retrieve_relevant_papers(question, db_path, top_k=TOP_K, min_score=MIN_RELEVANCE_SCORE):
     """
     Return list of dicts with keys: title, subject, content, link.

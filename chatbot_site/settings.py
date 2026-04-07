@@ -135,9 +135,30 @@ CHAT_USE_RESPONSES_API = os.environ.get(
     "true" if OPENAI_VECTOR_STORE_IDS else "false",
 ).lower() in ("1", "true", "yes")
 OPENAI_RESPONSES_MODEL = os.environ.get("OPENAI_RESPONSES_MODEL", "gpt-4o").strip()
-# Optional: drop file_search results below this relevance score (0–1). Empty = no score filter.
+# Optional: also list raw file_search hits in Sources (often noisier than citations).
+CHAT_SOURCES_INCLUDE_FILE_SEARCH_RESULTS = os.environ.get(
+    "CHAT_SOURCES_INCLUDE_FILE_SEARCH_RESULTS", ""
+).lower() in ("1", "true", "yes")
+# When including file_search hits, drop results below this score (0–1). Default 0.25 if unset.
 _fs_min = os.environ.get("FILE_SEARCH_MIN_RESULT_SCORE", "").strip()
-FILE_SEARCH_MIN_RESULT_SCORE = float(_fs_min) if _fs_min else None
+FILE_SEARCH_MIN_RESULT_SCORE = float(_fs_min) if _fs_min else 0.25
+# Max **Sources** links in Responses mode (citations + optional file_search). Lower avoids weak tail citations.
+_smax = os.environ.get("CHAT_SOURCES_MAX", "2").strip()
+try:
+    CHAT_SOURCES_MAX = max(1, int(_smax or "2"))
+except ValueError:
+    CHAT_SOURCES_MAX = 2
+# Only list fact sheets that score vs the user question AND share enough query keywords (stops unrelated links).
+try:
+    CHAT_SOURCES_MIN_RELEVANCE_SCORE = int(os.environ.get("CHAT_SOURCES_MIN_RELEVANCE_SCORE", "8"))
+except ValueError:
+    CHAT_SOURCES_MIN_RELEVANCE_SCORE = 8
+try:
+    CHAT_SOURCES_MIN_KEYWORD_OVERLAP = float(
+        os.environ.get("CHAT_SOURCES_MIN_KEYWORD_OVERLAP", "0.35").strip() or "0.35"
+    )
+except ValueError:
+    CHAT_SOURCES_MIN_KEYWORD_OVERLAP = 0.35
 
 # Backend data
 FACT_SHEETS_DB_PATH = BASE_DIR / "Backend" / "fact_sheets.db"

@@ -1,6 +1,8 @@
 """
 Chat service: calls OpenAI (Responses API with file_search, or Assistants API).
-Sources for Responses mode come only from retrieval/citations, not CSV keyword matching.
+**Sources** lists only fact sheets that pass fact_sheets_for_sources_policy() for the
+user's question (DB score + keyword overlap). Responses mode intersects that with
+file_citation filenames — never CSV keyword guessing.
 """
 
 import csv
@@ -10,8 +12,10 @@ import re
 import time
 from collections import Counter
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from chat.services.retrieval import (
+    fact_sheets_for_sources_policy,
     resolve_fact_sheet_url_by_filename,
     retrieve_relevant_papers,
     verify_retrieval_relevance,
@@ -243,16 +247,56 @@ def _clean_reply(reply: str) -> str:
     return reply.strip()
 
 
-def _build_sources_section(reply_text: str, user_message: str = "") -> str:
-    """Build a **Sources** section with real matched URLs."""
-    urls = _find_matching_urls(reply_text, user_message=user_message)
-    if not urls:
+def _source_policy_kwargs() -> dict:
+    return {
+        "min_score": int(getattr(settings, "CHAT_SOURCES_MIN_RELEVANCE_SCORE", 8)),
+        "min_keyword_overlap": float(getattr(settings, "CHAT_SOURCES_MIN_KEYWORD_OVERLAP", 0.35)),
+    }
+
+
+def _link_basename(link: str) -> str:
+    """Lowercase PDF/file basename from a stored URL or path (matches vector-store filenames)."""
+    if not link or not isinstance(link, str):
+        return ""
+    s = link.strip()
+    if "://" in s:
+        path = urlparse(s).path
+        name = Path(unquote(path)).name
+    else:
+        name = Path(s.replace("\\", "/")).name
+    return unquote(name).lower()
+
+
+def _format_sources_markdown(papers: list) -> str:
+    """Build **Sources** from fact sheet dicts (title, link) from the DB policy."""
+    if not papers:
         return ""
     lines = ["\n\n**Sources:**"]
-    for url in urls:
-        title = _url_to_title(url)
+    for p in papers:
+        url = (p.get("link") or "").strip()
+        if not url:
+            continue
+        title = (p.get("title") or "").strip() or _url_to_title(url)
         lines.append(f"- [{title}]({url})")
     return "\n".join(lines)
+
+
+def _build_sources_section(reply_text: str, user_message: str = "") -> str:
+    """Build **Sources** from fact_sheets.db using the user question (not CSV keyword matching)."""
+    db_path = getattr(settings, "FACT_SHEETS_DB_PATH", None)
+    if not db_path:
+        return ""
+    q = (user_message or "").strip()
+    if not q:
+        return ""
+    cap = max(1, int(getattr(settings, "CHAT_SOURCES_MAX", 2)))
+    papers = fact_sheets_for_sources_policy(
+        q,
+        db_path,
+        max_results=cap,
+        **_source_policy_kwargs(),
+    )
+    return _format_sources_markdown(papers)
 
 
 def _use_responses_api() -> bool:
@@ -262,16 +306,92 @@ def _use_responses_api() -> bool:
     return bool(vs)
 
 
-def _build_sources_from_retrieval(response, *, db_path) -> str:
-    """Build **Sources** from file_citation annotations and file_search_call.results only."""
+def _collect_citation_filenames(response) -> list[str]:
+    """
+    Filenames from file_citation annotations only, in model output order.
+    These match what the answer text actually cited — unlike raw file_search rankings.
+    """
+    seen_name: set[str] = set()
+    out: list[str] = []
+    for item in getattr(response, "output", None) or []:
+        if getattr(item, "type", None) != "message":
+            continue
+        for block in getattr(item, "content", None) or []:
+            if getattr(block, "type", None) != "output_text":
+                continue
+            for ann in getattr(block, "annotations", None) or []:
+                atype = getattr(ann, "type", None)
+                if atype not in ("file_citation", "container_file_citation"):
+                    continue
+                fn = (getattr(ann, "filename", None) or "").strip()
+                if not fn:
+                    continue
+                key = Path(fn).name.lower()
+                if key in seen_name:
+                    continue
+                seen_name.add(key)
+                out.append(fn)
+    return out
+
+
+def _collect_file_search_filenames_scored(response) -> list[tuple[str, float]]:
+    """(filename, score) from file_search_call.results, best score first."""
+    scored: list[tuple[str, float]] = []
+    for item in getattr(response, "output", None) or []:
+        if getattr(item, "type", None) != "file_search_call":
+            continue
+        for res in getattr(item, "results", None) or []:
+            fn = (getattr(res, "filename", None) or "").strip()
+            if not fn:
+                continue
+            sc = getattr(res, "score", None)
+            scored.append((fn, float(sc) if sc is not None else -1.0))
+    scored.sort(key=lambda x: -x[1])
+    return scored
+
+
+def _build_sources_from_retrieval(response, *, db_path, user_message: str = "") -> str:
+    """
+    Build **Sources** only for citations whose PDF basename matches fact sheets
+    that pass fact_sheets_for_sources_policy for the user's question — not every
+    model citation or file_search hit.
+    """
     if response is None:
         return ""
+    q = (user_message or "").strip()
+    if not q or not db_path:
+        return ""
+
+    policy = _source_policy_kwargs()
+    policy_papers = fact_sheets_for_sources_policy(
+        q,
+        db_path,
+        max_scan=80,
+        max_results=40,
+        **policy,
+    )
+    allowed_bases = {
+        _link_basename(p.get("link") or "")
+        for p in policy_papers
+        if p.get("link")
+    }
+    if not allowed_bases:
+        return ""
+
+    include_fs = getattr(settings, "CHAT_SOURCES_INCLUDE_FILE_SEARCH_RESULTS", False)
+    min_score = getattr(settings, "FILE_SEARCH_MIN_RESULT_SCORE", None)
+    cap = int(getattr(settings, "CHAT_SOURCES_MAX", 2))
+    if cap < 1:
+        cap = 1
+
     seen_urls: set[str] = set()
     ordered: list[str] = []
-    min_score = getattr(settings, "FILE_SEARCH_MIN_RESULT_SCORE", None)
 
     def add_filename(fn: str) -> None:
-        if not fn or len(ordered) >= MAX_SOURCES:
+        if not fn or len(ordered) >= cap:
+            return
+        base = Path(fn.strip()).name.lower()
+        if base not in allowed_bases:
             return
         url = resolve_fact_sheet_url_by_filename(fn, db_path)
         if not url or url in seen_urls:
@@ -279,23 +399,19 @@ def _build_sources_from_retrieval(response, *, db_path) -> str:
         seen_urls.add(url)
         ordered.append(url)
 
-    for item in getattr(response, "output", None) or []:
-        itype = getattr(item, "type", None)
-        if itype == "message":
-            for block in getattr(item, "content", None) or []:
-                if getattr(block, "type", None) != "output_text":
-                    continue
-                for ann in getattr(block, "annotations", None) or []:
-                    atype = getattr(ann, "type", None)
-                    if atype in ("file_citation", "container_file_citation"):
-                        add_filename(getattr(ann, "filename", "") or "")
-        elif itype == "file_search_call":
-            for res in getattr(item, "results", None) or []:
-                if min_score is not None:
-                    sc = getattr(res, "score", None)
-                    if sc is not None and sc < float(min_score):
-                        continue
-                add_filename(getattr(res, "filename", "") or "")
+    for fn in _collect_citation_filenames(response):
+        add_filename(fn)
+
+    if include_fs and len(ordered) < cap:
+        threshold = float(min_score) if min_score is not None else 0.0
+        for fn, sc in _collect_file_search_filenames_scored(response):
+            if len(ordered) >= cap:
+                break
+            if sc < 0.0:
+                continue
+            if sc < threshold:
+                continue
+            add_filename(fn)
 
     if not ordered:
         return ""
@@ -325,6 +441,8 @@ def _call_openai_responses(
             "input": message,
             "tools": [{"type": "file_search", "vector_store_ids": list(vs_ids)}],
             "include": ["file_search_call.results"],
+            # Stored responses enable previous_response_id multi-turn chaining (see OpenAI migration guide).
+            "store": True,
         }
         prev = (previous_response_id or "").strip()
         if prev:
@@ -460,10 +578,10 @@ def get_reply(
     openai_last_response_id: str = "",
 ) -> dict:
     """
-    Get a reply from the OpenAI Assistant.
+    Get a reply using the Responses API (file_search + previous_response_id) when
+    OPENAI_VECTOR_STORE_IDS is set; otherwise the legacy Assistants API + thread id.
+
     Returns {"reply": "<text>"} on success, {"error": "<message>"} on missing API key.
-    If the assistant returns nothing, returns a clean message prompting
-    the user to use the escalation form.
     """
     county_display = (county or "Utah").strip() or "Utah"
     message_clean  = (message or "").strip() or "Hello"
@@ -494,7 +612,9 @@ def get_reply(
         )
         if reply:
             reply = _clean_reply(reply)
-            sources = _build_sources_from_retrieval(raw, db_path=db_path)
+            sources = _build_sources_from_retrieval(
+                raw, db_path=db_path, user_message=message_clean
+            )
             reply = (reply + sources).strip()
 
             if db_path and getattr(settings, "CHAT_RETRIEVAL_VERIFY", True):
@@ -532,7 +652,10 @@ def get_reply(
             out["openai_last_response_id"] = resp_id
         return out
 
-    logger.info("Calling OpenAI assistant for: %s", message_clean[:80])
+    logger.info(
+        "Calling OpenAI Assistants API (set OPENAI_VECTOR_STORE_IDS to use Responses API): %s",
+        message_clean[:80],
+    )
     reply, thread_out = _call_openai_assistant(
         full_message, api_key, thread_id=existing_thread
     )
