@@ -154,11 +154,35 @@ def chat_api(request):
             )
             retry_local = timezone.localtime(retry_at)
             retry_str = date_format(retry_local, format=r"l, F j, Y \a\t g:i A T")
+
+            csv_path = getattr(settings, 'COUNTY_CONTACTS_CSV_PATH', None)
+            contacts = get_county_contacts(county, csv_path)
+            if not contacts:
+                contacts = get_county_contacts("Statewide", csv_path)
+
+            contacts_block = ""
+            if contacts:
+                lines = []
+                for c in contacts:
+                    name = (c.get("name") or "").strip()
+                    phone = (c.get("phone") or "").strip()
+                    if name and phone:
+                        lines.append(f"- {name} — {phone}")
+                    elif name:
+                        lines.append(f"- {name}")
+                if lines:
+                    county_label = (county or "your area").strip()
+                    contacts_block = (
+                        "\n\nLocal USU Extension contacts:\n"
+                        + "\n".join(lines)
+                    )
             return JsonResponse(
                 {
                     'error': (
-                        f'You have reached the free question limit for AGNES '
-                        f'(last {window_hours} hours). You can try again after {retry_str}.'
+                        "AGNES is currently in a testing phase. "
+                        f"To help manage resource usage, we currently limit free questions to {limit} "
+                        f"per {window_hours} hours. You can try again after {retry_str}."
+                        f"{contacts_block}"
                     ),
                 },
                 status=429,
