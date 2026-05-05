@@ -50,7 +50,22 @@
 </head>
 <body>
     <div class="container">
-        <div class="back"><a href="{% url 'hub' %}?county={{ county|urlencode }}">← Back</a></div>
+        <div class="back"><a id="chatBackLink" href="{% url 'chat' %}?county={{ county|urlencode }}">← Back</a></div>
+        <script>
+        (function() {
+            var a = document.getElementById('chatBackLink');
+            if (!a) return;
+            var href = a.getAttribute('href') || '';
+            var cid = '';
+            try {
+                cid = (localStorage.getItem('conversation_id') || sessionStorage.getItem('conversation_id') || '').trim();
+            } catch (e) {}
+            if (cid) {
+                href += (href.indexOf('?') >= 0 ? '&' : '?') + 'conversation_id=' + encodeURIComponent(cid);
+                a.setAttribute('href', href);
+            }
+        })();
+        </script>
         <div class="header">
             <h1>Search for an article</h1>
             <p>Search by keyword (e.g. gardening, impact report)</p>

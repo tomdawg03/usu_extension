@@ -24,6 +24,22 @@ function resizeMessageInput() {
 // Chat history for context (max 20 messages)
 var chatHistory = [];
 
+// conversation_id in sessionStorage is tab-scoped; article search opens in a new tab
+// (_blank), so we also persist to localStorage so "Back to chat" can restore the thread.
+function persistConversationId(id) {
+    if (!id) return;
+    try {
+        sessionStorage.setItem('conversation_id', id);
+        localStorage.setItem('conversation_id', id);
+    } catch (e) {}
+}
+function clearStoredConversationId() {
+    try {
+        sessionStorage.removeItem('conversation_id');
+        localStorage.removeItem('conversation_id');
+    } catch (e) {}
+}
+
 // Subcategory map from server
 var subcategoryMap = {};
 (function() {
@@ -66,9 +82,7 @@ var MIN_LOADING_MS = 500;
         prevCtx = sessionStorage.getItem('chat_county_context') || '';
     } catch (e) {}
     if (countyFromUrl && prevCtx && countyFromUrl !== prevCtx) {
-        try {
-            sessionStorage.removeItem('conversation_id');
-        } catch (e) {}
+        clearStoredConversationId();
     }
     if (countyFromUrl) {
         try {
@@ -309,9 +323,7 @@ async function sendMessage() {
         const data = await response.json();
         if (data.conversation_id) {
             conversationId = data.conversation_id;
-            try {
-                sessionStorage.setItem('conversation_id', conversationId);
-            } catch(e) {}
+            persistConversationId(conversationId);
         }
         var text = response.ok ? (data.reply || 'Error: No reply received') : (data.error || 'Something went wrong.');
 
@@ -364,25 +376,36 @@ messageInput.addEventListener('input', resizeMessageInput);
 messageInput.focus();
 resizeMessageInput();
 
-// Restore existing conversation for this tab if available
 try {
-    const storedConversationId = sessionStorage.getItem('conversation_id');
+    var paramsForCid = new URLSearchParams(window.location.search);
+    var fromUrlCid = (paramsForCid.get('conversation_id') || '').trim();
+    var storedConversationId =
+        fromUrlCid ||
+        sessionStorage.getItem('conversation_id') ||
+        localStorage.getItem('conversation_id');
     if (storedConversationId) {
         conversationId = storedConversationId;
-        var chatRootRestore = document.querySelector('.chat-container');
-        if (chatRootRestore) chatRootRestore.classList.add('chat-active');
-        hideSuggestions();
+        persistConversationId(conversationId);
     }
-} catch(e) {}
+    if (fromUrlCid) {
+        try {
+            paramsForCid.delete('conversation_id');
+            var qs = paramsForCid.toString();
+            history.replaceState(
+                null,
+                '',
+                window.location.pathname + (qs ? '?' + qs : '') + window.location.hash
+            );
+        } catch (eRepl) {}
+    }
+} catch (e) {}
 
-// Pre-create OpenAI thread + conversation when there is no tab session, so the
-// first user message skips threads.create (modest latency win).
-(function warmConversationIfNeeded() {
-    if (conversationId) return;
+function warmConversationIfNeeded() {
+    if (conversationId) return Promise.resolve(null);
     var county = localStorage.getItem('selected_county') || '';
     var csrftoken = getCookie('csrftoken');
-    if (!csrftoken) return;
-    fetch('/api/chat/warm', {
+    if (!csrftoken) return Promise.resolve(null);
+    return fetch('/api/chat/warm', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -394,15 +417,55 @@ try {
         .then(function(data) {
             if (data && data.conversation_id) {
                 conversationId = data.conversation_id;
-                try {
-                    sessionStorage.setItem('conversation_id', conversationId);
-                } catch (e) {}
+                persistConversationId(conversationId);
             }
+            return data;
         })
-        .catch(function() {});
-})();
-
-// Initial greeting from Agnes (insert before suggested questions for landing layout)
-if (chatMessages) {
-    addMessage("Hi! I'm Agnes, your Extension office assistant.\n\nGo ahead and ask me a question about your farm, garden, or local Extension resources.", false, suggestionsSection || null, true);
+        .catch(function() { return null; });
 }
+
+(function initChatUi() {
+    (async function() {
+        var restored = false;
+        if (conversationId) {
+            try {
+                var res = await fetch(
+                    '/api/chat/messages?conversation_id=' + encodeURIComponent(conversationId)
+                );
+                if (res.ok) {
+                    var data = await res.json();
+                    var msgs = data && data.messages ? data.messages : [];
+                    if (msgs.length > 0) {
+                        restored = true;
+                        var chatRootRestore = document.querySelector('.chat-container');
+                        if (chatRootRestore) chatRootRestore.classList.add('chat-active');
+                        hideSuggestions();
+                        chatHistory = [];
+                        msgs.forEach(function(m) {
+                            addMessage(m.content, m.role === 'user');
+                        });
+                        chatHistory = msgs
+                            .map(function(m) {
+                                return { role: m.role, content: m.content };
+                            })
+                            .slice(-20);
+                    }
+                } else if (res.status === 404) {
+                    conversationId = null;
+                    clearStoredConversationId();
+                }
+            } catch (fetchErr) {}
+        }
+        if (!conversationId) {
+            await warmConversationIfNeeded();
+        }
+        if (!restored && chatMessages) {
+            addMessage(
+                "Hi! I'm Agnes, your Extension office assistant.\n\nGo ahead and ask me a question about your farm, garden, or local Extension resources.",
+                false,
+                suggestionsSection || null,
+                true
+            );
+        }
+    })();
+})();

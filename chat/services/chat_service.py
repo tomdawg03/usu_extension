@@ -12,7 +12,7 @@ import re
 import time
 from collections import Counter
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from chat.services.retrieval import (
     fact_sheets_for_sources_policy,
@@ -630,7 +630,7 @@ def get_reply(
                     reply += (
                         "\n\n> **Tip:** The answer above is based on general knowledge. "
                         "For more specific USU Extension resources, try our "
-                        "[article search](/search/?county=" + (county or "") + ") "
+                        "[article search](/search/?county=" + quote((county or "").strip(), safe="") + ") "
                         "to browse fact sheets directly."
                     )
 
@@ -678,7 +678,7 @@ def get_reply(
                 reply += (
                     "\n\n> **Tip:** The answer above is based on general knowledge. "
                     "For more specific USU Extension resources, try our "
-                    "[article search](/search/?county=" + (county or "") + ") "
+                    "[article search](/search/?county=" + quote((county or "").strip(), safe="") + ") "
                     "to browse fact sheets directly."
                 )
 

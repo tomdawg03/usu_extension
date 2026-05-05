@@ -116,6 +116,27 @@ def warm_chat_api(request):
     })
 
 
+@require_http_methods(["GET"])
+def conversation_messages_api(request):
+    """Return stored messages for a conversation (for restoring the UI after navigation)."""
+    conversation_id = (request.GET.get("conversation_id") or "").strip()
+    if not conversation_id:
+        return JsonResponse({"error": "conversation_id is required"}, status=400)
+    try:
+        uuid.UUID(str(conversation_id))
+    except (ValueError, AttributeError, TypeError):
+        return JsonResponse({"error": "Invalid conversation_id"}, status=400)
+    try:
+        conv = Conversation.objects.get(id=conversation_id)
+    except Conversation.DoesNotExist:
+        return JsonResponse({"error": "Not found"}, status=404)
+    messages = [
+        {"role": m.role, "content": m.content}
+        for m in conv.messages.all()
+    ]
+    return JsonResponse({"messages": messages})
+
+
 @require_http_methods(["POST"])
 def chat_api(request):
     """
